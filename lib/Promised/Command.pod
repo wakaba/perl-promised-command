@@ -1,0 +1,131 @@
+=head1 NAME
+
+Promised::Command - Run a command
+
+=head1 SYNOPSIS
+
+  use Promised::Command;
+  
+  $cmd = Promised::Command->new (['ls', '-a', '/']);
+  $cmd->run->then (sub {
+    return $cmd->wait;
+  })->then (sub {
+    my $result = $_[0];
+    if ($result->exit_code == 0) {
+      warn "done";
+    } else {
+      warn "failed";
+    }
+  });
+
+=head1 DESCRIPTION
+
+The C<Promised::Command> class provides a L<Promise>-returning command
+execution interface.
+
+=head1 METHODS
+
+Following methods are available:
+
+=over 4
+
+=item $cmd = Promised::Command->new ($args)
+
+Create a new command object.  The argument must be an array reference
+containing a command (zeroth item) and zero or more arguments (first
+or later items).
+
+=item $promise = $cmd->run
+
+Start the execution of the command.  It returns a L<Promise>, which is
+resolved with a result object when the execution is started.
+
+This method cannot be invoked multiple times.
+
+=item $promise = $cmd->wait
+
+Return a L<Promise>, which is resolved with a result object once the
+execution of the command has finished.
+
+This method can be invoked before the C<run>'s promise is resolved,
+but it must be invoked after the C<run> method is invoked.  This
+method always returns the same promise.
+
+The promise is resolved with a result object whose C<is_success>
+method returns true even when the exit code of the command is
+non-zero.  Note also that failure to execute the command
+(e.g. command-not-found error) is also result in resolving the promise
+with a successful result object whose exit code is non-zero.
+
+=item $pid = $cmd->pid
+
+Return the process ID of the child process (i.e. the command's
+process).
+
+This method can be invoked after the C<run> method is invoked.  Note
+that there can no longer be the process with the ID or can be a
+different process with the ID if the command has finished.
+
+=item $boolean = $cmd->running
+
+Return whether the command is running or not.
+
+Note that returning a true value does not mean the command is actually
+in active; it might be finished but not C<waitpid>ed by this process
+yet.
+
+=back
+
+=head1 RESULT OBJECT
+
+Promises are resolved with a result object, which has following
+methods:
+
+=over 4
+
+=item $boolean = $result->is_success
+
+=item $boolean = $result->is_error
+
+Whether the operation has succeded or in error.  Note that C<<
+!!$result->is_success == !!!$result->is_error >> is always true.
+
+=item $string = '' . $result
+
+Return a short message of the result for the developer.
+
+=item $int = $result->exit_code
+
+Return the exit code of the command, if applicable.
+
+=item $int = $result->signal
+
+Return the signal which terminates the command, if applicable.
+
+=item $boolean = $result->core_dump
+
+Return whether there is a core dump or not, if applicable.
+
+=item $string = $result->message
+
+Return a short error message for the developer, if available.
+
+=back
+
+=head1 DEPENDENCY
+
+The module requires L<Promise>
+<https://github.com/wakaba/perl-promise> and L<AnyEvent::Util>.
+
+=head1 AUTHOR
+
+Wakaba <wakaba@suikawiki.org>.
+
+=head1 LICENSE
+
+Copyright 2015 Wakaba <wakaba@suikawiki.org>.
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut
