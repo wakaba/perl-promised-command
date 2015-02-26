@@ -18,12 +18,11 @@ test {
       isa_ok $result, 'Promised::Command::Result';
       ok $result->is_success;
       ok $cmd->pid;
-      ok not $cmd->running;
       done $c;
       undef $c;
     } $c;
   });
-} n => 5;
+} n => 4;
 
 test {
   my $c = shift;
