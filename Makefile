@@ -1,5 +1,3 @@
-# -*- Makefile -*-
-
 all:
 
 WGET = wget
