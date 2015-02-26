@@ -211,6 +211,123 @@ test {
   done $c;
 } n => 3, name => 'pid before run';
 
+test {
+  my $c = shift;
+  my $cmd = Promised::Command->new (['perl', '-e', q{sleep 2}]);
+  $cmd->run->then (sub {
+    return $cmd->send_signal ('INT');
+  })->then (sub {
+    my $result = $_[0];
+    test {
+      isa_ok $result, 'Promised::Command::Result';
+      ok $result->is_success;
+      is $result->killed, 1;
+    } $c;
+    return $cmd->wait;
+  })->catch (sub {
+    my $result = $_[0];
+    test {
+      isa_ok $result, 'Promised::Command::Result';
+      ok $result->is_success;
+      is $result->signal, 2;
+      ok not $result->core_dump;
+      is $result->exit_code, -1;
+      ok ''.$result;
+      done $c;
+      undef $c;
+    } $c;
+  });
+} n => 9, name => 'killed';
+
+test {
+  my $c = shift;
+  my $cmd = Promised::Command->new (['perl', '-e', q{sleep 2}]);
+  $cmd->run->then (sub {
+    return $cmd->send_signal (2);
+  })->then (sub {
+    my $result = $_[0];
+    test {
+      isa_ok $result, 'Promised::Command::Result';
+      ok $result->is_success;
+      is $result->killed, 1;
+    } $c;
+    return $cmd->wait;
+  })->catch (sub {
+    my $result = $_[0];
+    test {
+      isa_ok $result, 'Promised::Command::Result';
+      ok $result->is_success;
+      is $result->signal, 2;
+      ok not $result->core_dump;
+      is $result->exit_code, -1;
+      ok ''.$result;
+      done $c;
+      undef $c;
+    } $c;
+  });
+} n => 9, name => 'killed';
+
+test {
+  my $c = shift;
+  my $cmd = Promised::Command->new (['true']);
+  $cmd->run->then (sub {
+    return $cmd->send_signal (0);
+  })->then (sub {
+    my $result = $_[0];
+    test {
+      isa_ok $result, 'Promised::Command::Result';
+      ok $result->is_success;
+      is $result->killed, 1;
+    } $c;
+    return $cmd->wait;
+  })->then (sub {
+    my $result = $_[0];
+    test {
+      isa_ok $result, 'Promised::Command::Result';
+      ok $result->is_success;
+      is $result->signal, undef;
+      is $result->exit_code, 0;
+      done $c;
+      undef $c;
+    } $c;
+  });
+} n => 7, name => 'not killed';
+
+test {
+  my $c = shift;
+  my $cmd = Promised::Command->new (['true']);
+  $cmd->run->then (sub {
+    return $cmd->wait;
+  })->then (sub {
+    return $cmd->send_signal ('INT');
+  })->then (sub {
+    my $result = $_[0];
+    test {
+      isa_ok $result, 'Promised::Command::Result';
+      ok $result->is_success;
+      is $result->killed, 0;
+      done $c;
+      undef $c;
+    } $c;
+  });
+} n => 3, name => 'killed count = 0 (not running)';
+
+test {
+  my $c = shift;
+  my $cmd = Promised::Command->new (['ls']);
+  $cmd->send_signal (9)->catch (sub {
+    my $result = $_[0];
+    test {
+      isa_ok $result, 'Promised::Command::Result';
+      ok $result->is_error;
+      is $result->message, 'Not yet |run|';
+    } $c;
+  })->then (sub {
+    done $c;
+    undef $c;
+  });
+} n => 3, name => 'send_signal before run';
+
 run_tests;
 
 =head1 LICENSE

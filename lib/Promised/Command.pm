@@ -47,6 +47,18 @@ sub wait ($) {
   return $_[0]->{wait_promise} || Promise->reject (_r is_error => 1, message => "Not yet |run|");
 } # wait
 
+sub send_signal ($$) {
+  my ($self, $signal) = @_;
+  return Promise->new (sub {
+    my $pid = $self->pid;
+    if ($self->running) {
+      $_[0]->(_r killed => kill $signal, $pid);
+    } else {
+      $_[0]->(_r killed => 0);
+    }
+  });
+} # send_signal
+
 package Promised::Command::Result;
 use overload '""' => 'stringify', fallback => 1;
 
@@ -60,8 +72,9 @@ sub is_error ($) {
 
 sub signal ($) { $_[0]->{signal} }
 sub core_dump ($) { $_[0]->{core_dump} }
-sub exit_code ($) { $_[0]->{exit_code} }
+sub exit_code ($) { defined $_[0]->{exit_code} ? $_[0]->{exit_code} : -1 }
 sub message ($) { $_[0]->{message} }
+sub killed ($) { $_[0]->{killed} }
 
 sub stringify ($) {
   if ($_[0]->{is_error}) {
