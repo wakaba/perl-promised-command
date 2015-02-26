@@ -62,7 +62,7 @@ with a successful result object whose exit code is non-zero.
 Return the process ID of the child process (i.e. the command's
 process).
 
-This method can be invoked after the C<run> method is invoked.  Note
+This method can be invoked after the C<run> promise is resolved.  Note
 that there can no longer be the process with the ID or can be a
 different process with the ID if the command has finished.
 
@@ -73,6 +73,19 @@ Return whether the command is running or not.
 Note that returning a true value does not mean the command is actually
 in active; it might be finished but not C<waitpid>ed by this process
 yet.
+
+=item $promise = $cmd->send_signal ($signal)
+
+Send a signal to the command's process, if running.
+
+The argument must be a string or integer representing the signal, such
+as C<INT> or C<2>, or zero to not send any signal.  See C<perldoc -f
+kill>.
+
+The method returns a L<Promise>, which is resolved with a result
+object whose C<killed> method returns the number of processed to which
+the signal is sent.  If the command's process is no longer running,
+the signal is sent to no process.
 
 =back
 
@@ -96,7 +109,8 @@ Return a short message of the result for the developer.
 
 =item $int = $result->exit_code
 
-Return the exit code of the command, if applicable.
+Return the exit code of the command, if applicable, or C<-1>
+otherwise.
 
 =item $int = $result->signal
 
@@ -105,6 +119,11 @@ Return the signal which terminates the command, if applicable.
 =item $boolean = $result->core_dump
 
 Return whether there is a core dump or not, if applicable.
+
+=item $int = $result->killed
+
+Return the number of process to which the signal is sent.  Used by
+C<send_signal>'s promise.
 
 =item $string = $result->message
 
