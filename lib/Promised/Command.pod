@@ -147,6 +147,20 @@ object whose C<killed> method returns the number of processed to which
 the signal is sent.  If the command's process is no longer running,
 the signal is sent to no process.
 
+=item $value = $cmd->propagate_signal
+
+=item $cmd->propagate_signal ($value)
+
+Get or set whether signals to this (main) process should be propagated
+to the child (command) process or not.
+
+The value can be a non-reference value or an array reference of signal
+names.  A non-reference value is equivalent to C<['INT', 'QUIT',
+'TERM']>.  The value represents the types of the signals to propagate.
+
+This method must be invoked before the C<run> method is invoked.  If
+this method is not invoked, no signal is propagated.
+
 =back
 
 =head1 RESULT OBJECT

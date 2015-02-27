@@ -3,6 +3,7 @@ use strict;
 use warnings;
 our $VERSION = '1.0';
 use Promise;
+use AnyEvent;
 use AnyEvent::Util qw(run_cmd);
 
 sub new ($$) {
@@ -50,6 +51,13 @@ sub stderr ($;$) {
   die "Not implemented" if defined wantarray;
 } # stderr
 
+sub propagate_signal ($;$) {
+  if (@_ > 1) {
+    $_[0]->{propagate_signal} = $_[1];
+  }
+  return $_[0]->{propagate_signal};
+} # propagate_signal
+
 sub _r (@) {
   return bless {@_}, __PACKAGE__.'::Result';
 } # _r
@@ -77,9 +85,19 @@ sub run ($) {
     $args{'<'} = $self->{stdin} if defined $self->{stdin};
     $args{'>'} = $self->{stdout} if defined $self->{stdout};
     $args{'2>'} = $self->{stderr} if defined $self->{stderr};
+    if ($self->{propagate_signal}) {
+      for my $sig (ref $self->{propagate_signal}
+                       ? @{$self->{propagate_signal}}
+                       : qw(INT TERM QUIT)) {
+        $self->{signal_handlers}->{$sig} = AE::signal $sig => sub {
+          kill $sig, $self->{pid} if $self->{running};
+        };
+      }
+    }
     (run_cmd [$self->{command}, @{$self->{args}}], %args)->cb (sub {
       my $result = $_[0]->recv;
       delete $self->{running};
+      delete $self->{signal_handlers};
       if ($result & 0x7F) {
         $ng->(_r core_dump => !!($result & 0x80), signal => $result & 0x7F);
       } else {

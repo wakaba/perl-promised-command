@@ -148,6 +148,146 @@ test {
   });
 } n => 4;
 
+test {
+  my $c = shift;
+  my $cmd = Promised::Command->new (['perl', '-e', q{
+    use AnyEvent;
+    my $cv = AE::cv;
+    use Promised::Command;
+    my $cmd = Promised::Command->new (['perl', '-e', q{
+      sleep 100;
+    }]);
+    $cmd->run
+        ->then (sub { syswrite STDOUT, $cmd->pid })
+        ->then (sub { $cmd->wait })
+        ->catch (sub { })
+        ->then (sub { $cv->send });
+    $cv->recv;
+  }]);
+  $cmd->stdout (\my $grandchild_pid);
+  $cmd->run;
+  my $child_pid;
+  my $timer; $timer = AE::timer 0.3, 0, sub {
+    test {
+      $child_pid = $cmd->pid;
+      kill 2, $child_pid;
+      undef $timer;
+    } $c;
+  };
+  my $timer2; $timer2 = AE::timer 0.6, 0, sub {
+    test {
+      ok not kill 0, $child_pid;
+      ok kill 0, $grandchild_pid;
+      kill 2, $grandchild_pid;
+      undef $timer2;
+    } $c;
+  };
+  $cmd->wait->catch (sub { })->then (sub {
+    test {
+      ok not kill 0, $child_pid;
+      ok not kill 0, $grandchild_pid;
+    } $c;
+  }, sub {
+    my $error = $_[0];
+    test {
+      ok 0;
+    } $c;
+  })->then (sub {
+    done $c;
+    undef $c;
+  });
+} n => 4;
+
+for my $sig (2, 3, 15) {
+  test {
+    my $c = shift;
+    my $cmd = Promised::Command->new (['perl', '-e', q{
+      use AnyEvent;
+      my $cv = AE::cv;
+      use Promised::Command;
+      my $cmd = Promised::Command->new (['perl', '-e', q{
+        sleep 100;
+      }]);
+      $cmd->propagate_signal (1);
+      $cmd->run
+          ->then (sub { syswrite STDOUT, $cmd->pid })
+          ->then (sub { $cmd->wait })
+          ->catch (sub { })
+          ->then (sub { $cv->send });
+      $cv->recv;
+    }]);
+    $cmd->stdout (\my $grandchild_pid);
+    $cmd->run;
+    my $child_pid;
+    my $timer; $timer = AE::timer 0.3, 0, sub {
+      test {
+        $child_pid = $cmd->pid;
+        kill $sig, $child_pid;
+        undef $timer;
+      } $c;
+    };
+    $cmd->wait->catch (sub { })->then (sub {
+      test {
+        ok not kill 0, $child_pid;
+        ok not kill 0, $grandchild_pid;
+      } $c;
+    }, sub {
+      my $error = $_[0];
+      test {
+        ok 0;
+      } $c;
+    })->then (sub {
+      done $c;
+      undef $c;
+    });
+  } n => 2;
+}
+
+for my $sig ('HUP') {
+  test {
+    my $c = shift;
+    my $cmd = Promised::Command->new (['perl', '-e', q{
+      use AnyEvent;
+      my $cv = AE::cv;
+      use Promised::Command;
+      my $cmd = Promised::Command->new (['perl', '-e', q{
+        sleep 100;
+      }]);
+      $cmd->propagate_signal (['HUP']);
+      $cmd->run
+          ->then (sub { syswrite STDOUT, $cmd->pid })
+          ->then (sub { $cmd->wait })
+          ->catch (sub { })
+          ->then (sub { $cv->send });
+      $cv->recv;
+    }]);
+    $cmd->stdout (\my $grandchild_pid);
+    $cmd->run;
+    my $child_pid;
+    my $timer; $timer = AE::timer 0.3, 0, sub {
+      test {
+        $child_pid = $cmd->pid;
+        kill $sig, $child_pid;
+        undef $timer;
+      } $c;
+    };
+    $cmd->wait->catch (sub { })->then (sub {
+      test {
+        ok not kill 0, $child_pid;
+        ok not kill 0, $grandchild_pid;
+      } $c;
+    }, sub {
+      my $error = $_[0];
+      test {
+        ok 0;
+      } $c;
+    })->then (sub {
+      done $c;
+      undef $c;
+    });
+  } n => 2;
+}
+
 run_tests;
 
 =head1 LICENSE
