@@ -207,6 +207,8 @@ Return a short error message for the developer, if available.
 
 =head1 DEPENDENCY
 
+The module requires Perl 5.10 or later.
+
 The module requires L<Promise>
 <https://github.com/wakaba/perl-promise> and L<AnyEvent::Util>.
 
