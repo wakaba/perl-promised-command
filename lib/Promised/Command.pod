@@ -57,6 +57,33 @@ non-zero.  Note also that failure to execute the command
 (e.g. command-not-found error) is also result in resolving the promise
 with a successful result object whose exit code is non-zero.
 
+=item $cmd->stdin (SCALARREF)
+
+Specify the standard input as a scalar reference to the byte string.
+
+This method must be invoked before the C<run> method is invoked.  If
+this method is not invoked, the standard input is left unchanged
+(i.e. same as the standard input of the main process).
+
+=item $cmd->stdout (SCALARREF)
+
+=item $cmd->stdout (CODE)
+
+=item $cmd->stderr (SCALARREF)
+
+=item $cmd->stderr (CODE)
+
+Specify how the standard output or the standard error output is
+handled.  If a scalar reference is specified, the output is set to the
+scalar value.  If a code reference is specified, the code is invoked
+with a chunk as the argument whenever the chunk is available, and with
+an C<undef> as the argument when the end of the output is reached.
+
+This method must be invoked before the C<run> method is invoked.  If
+this method is not invoked, the standard input is left unchanged
+(i.e. same as the standard output or the standard error output of the
+main process).
+
 =item $pid = $cmd->pid
 
 Return the process ID of the child process (i.e. the command's

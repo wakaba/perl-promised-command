@@ -11,6 +11,27 @@ sub new ($$) {
   return $self;
 } # new
 
+sub stdin ($;$) {
+  if (@_ > 1) {
+    $_[0]->{stdin} = $_[1];
+  }
+  die "Not implemented" if defined wantarray;
+} # stdin
+
+sub stdout ($;$) {
+  if (@_ > 1) {
+    $_[0]->{stdout} = $_[1];
+  }
+  die "Not implemented" if defined wantarray;
+} # stdout
+
+sub stderr ($;$) {
+  if (@_ > 1) {
+    $_[0]->{stderr} = $_[1];
+  }
+  die "Not implemented" if defined wantarray;
+} # stderr
+
 sub _r (@) {
   return bless {@_}, __PACKAGE__.'::Result';
 } # _r
@@ -22,7 +43,11 @@ sub run ($) {
   $self->{running} = 1;
   $self->{wait_promise} = Promise->new (sub {
     my ($ok, $ng) = @_;
-    (run_cmd [$self->{command}, @{$self->{args}}], '$$' => \($self->{pid}))->cb (sub {
+    my %args = ('$$' => \($self->{pid}));
+    $args{'<'} = $self->{stdin} if defined $self->{stdin};
+    $args{'>'} = $self->{stdout} if defined $self->{stdout};
+    $args{'2>'} = $self->{stderr} if defined $self->{stderr};
+    (run_cmd [$self->{command}, @{$self->{args}}], %args)->cb (sub {
       my $result = $_[0]->recv;
       delete $self->{running};
       if ($result & 0x7F) {
