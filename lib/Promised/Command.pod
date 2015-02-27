@@ -57,6 +57,28 @@ non-zero.  Note also that failure to execute the command
 (e.g. command-not-found error) is also result in resolving the promise
 with a successful result object whose exit code is non-zero.
 
+=item $cmd->wd ($string)
+
+=item $string = $cwd->wd
+
+Get or set the current working directory for the command as a
+(system-dependent byte) string.
+
+This method must be invoked before the C<run> method is invoked.  If
+this method is not invoked, the current directory is left unchanged
+(i.e. same as that of the main process).
+
+=item $hashref = $cmd->envs
+
+Return the environment variables for the command as a reference to the
+hash of environment name/value byte string pairs.
+
+If a value is specified in the hash, an environment variable is set.
+Otherwise, if an C<undef> value is explicitly specified in the hash,
+the environment variable, if any, is unset.  Otherwise, any
+environment variable of the main process is left unchanged.  This
+method must be invoked before the C<run> method is invoked.
+
 =item $cmd->stdin (SCALARREF)
 
 Specify the standard input as a scalar reference to the byte string.

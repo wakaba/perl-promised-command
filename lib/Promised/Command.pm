@@ -11,6 +11,17 @@ sub new ($$) {
   return $self;
 } # new
 
+sub wd ($;$) {
+  if (@_ > 1) {
+    $_[0]->{wd} = $_[1];
+  }
+  return $_[0]->{wd};
+} # wd
+
+sub envs ($) {
+  return $_[0]->{envs} ||= {};
+} # envs
+
 sub stdin ($;$) {
   if (@_ > 1) {
     $_[0]->{stdin} = $_[1];
@@ -43,7 +54,18 @@ sub run ($) {
   $self->{running} = 1;
   $self->{wait_promise} = Promise->new (sub {
     my ($ok, $ng) = @_;
-    my %args = ('$$' => \($self->{pid}));
+    my %args = ('$$' => \($self->{pid}), on_prepare => sub {
+      chdir $self->{wd} or die "Can't change working directory to |$self->{wd}|"
+          if defined $self->{wd};
+      my $envs = $self->{envs} || {};
+      for (keys %$envs) {
+        if (defined $envs->{$_}) {
+          $ENV{$_} = $envs->{$_};
+        } else {
+          delete $ENV{$_};
+        }
+      }
+    });
     $args{'<'} = $self->{stdin} if defined $self->{stdin};
     $args{'>'} = $self->{stdout} if defined $self->{stdout};
     $args{'2>'} = $self->{stderr} if defined $self->{stderr};
