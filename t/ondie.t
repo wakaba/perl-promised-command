@@ -226,7 +226,7 @@ for my $sig (2, 3, 15) {
     $cmd->stdout (\my $grandchild_pid);
     $cmd->run;
     my $child_pid;
-    my $timer; $timer = AE::timer 0.3, 0, sub {
+    my $timer; $timer = AE::timer 0.6, 0, sub {
       test {
         $child_pid = $cmd->pid;
         kill $sig, $child_pid;
