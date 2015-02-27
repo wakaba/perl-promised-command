@@ -4,7 +4,7 @@ use Promised::Command;
 use AnyEvent;
 
 my $cv = AE::cv;
-my $cmd = Promised::Command->new (['sleep', 10]);
+my $cmd = Promised::Command->new (['sleep', 100]);
 
 $cmd->run->then (sub {
   warn "executed ($_[0])";

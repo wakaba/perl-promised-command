@@ -5,7 +5,6 @@ use lib glob path (__FILE__)->parent->parent->child ('t_deps/modules/*/lib');
 use Test::X1;
 use Test::More;
 use Promised::Command;
-use Promise;
 
 test {
   my $c = shift;
@@ -38,7 +37,7 @@ test {
 
 test {
   my $c = shift;
-  my $cmd = Promised::Command->new (['perl', '-e', 'print "abcd aa\xFE\xA0a"; print STDERR "ab\xFE"']);
+  my $cmd = Promised::Command->new (['perl', '-e', 'print "abcd aa\xFE\xA0a\x0A"; print STDERR "ab\xFE"']);
   $cmd->stderr (\my $stderr);
   $cmd->run;
   $cmd->wait->then (sub {

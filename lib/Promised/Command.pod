@@ -57,6 +57,17 @@ non-zero.  Note also that failure to execute the command
 (e.g. command-not-found error) is also result in resolving the promise
 with a successful result object whose exit code is non-zero.
 
+=item $boolean = $cmd->create_process_group
+
+=item $cmd->create_process_group ($boolean)
+
+Get or set whether a new process group should be created for the
+command (by C<setpgrp>) or not.
+
+This method must be invoked before the C<run> method is invoked.  If
+this method is not invoked, the same process group as the main process
+is used.
+
 =item $cmd->wd ($string)
 
 =item $string = $cwd->wd

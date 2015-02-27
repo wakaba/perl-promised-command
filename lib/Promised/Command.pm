@@ -22,6 +22,13 @@ sub envs ($) {
   return $_[0]->{envs} ||= {};
 } # envs
 
+sub create_process_group ($;$) {
+  if (@_ > 1) {
+    $_[0]->{create_process_group} = $_[1];
+  }
+  return $_[0]->{create_process_group};
+} # create_process_group
+
 sub stdin ($;$) {
   if (@_ > 1) {
     $_[0]->{stdin} = $_[1];
@@ -55,6 +62,7 @@ sub run ($) {
   $self->{wait_promise} = Promise->new (sub {
     my ($ok, $ng) = @_;
     my %args = ('$$' => \($self->{pid}), on_prepare => sub {
+      setpgrp if $self->{create_process_group};
       chdir $self->{wd} or die "Can't change working directory to |$self->{wd}|"
           if defined $self->{wd};
       my $envs = $self->{envs} || {};
