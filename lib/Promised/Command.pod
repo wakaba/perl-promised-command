@@ -57,6 +57,66 @@ non-zero.  Note also that failure to execute the command
 (e.g. command-not-found error) is also result in resolving the promise
 with a successful result object whose exit code is non-zero.
 
+=item $boolean = $cmd->create_process_group
+
+=item $cmd->create_process_group ($boolean)
+
+Get or set whether a new process group should be created for the
+command (by C<setpgrp>) or not.
+
+This method must be invoked before the C<run> method is invoked.  If
+this method is not invoked, the same process group as the main process
+is used.
+
+=item $cmd->wd ($string)
+
+=item $string = $cwd->wd
+
+Get or set the current working directory for the command as a
+(system-dependent byte) string.
+
+This method must be invoked before the C<run> method is invoked.  If
+this method is not invoked, the current directory is left unchanged
+(i.e. same as that of the main process).
+
+=item $hashref = $cmd->envs
+
+Return the environment variables for the command as a reference to the
+hash of environment name/value byte string pairs.
+
+If a value is specified in the hash, an environment variable is set.
+Otherwise, if an C<undef> value is explicitly specified in the hash,
+the environment variable, if any, is unset.  Otherwise, any
+environment variable of the main process is left unchanged.  This
+method must be invoked before the C<run> method is invoked.
+
+=item $cmd->stdin (SCALARREF)
+
+Specify the standard input as a scalar reference to the byte string.
+
+This method must be invoked before the C<run> method is invoked.  If
+this method is not invoked, the standard input is left unchanged
+(i.e. same as the standard input of the main process).
+
+=item $cmd->stdout (SCALARREF)
+
+=item $cmd->stdout (CODE)
+
+=item $cmd->stderr (SCALARREF)
+
+=item $cmd->stderr (CODE)
+
+Specify how the standard output or the standard error output is
+handled.  If a scalar reference is specified, the output is set to the
+scalar value.  If a code reference is specified, the code is invoked
+with a chunk as the argument whenever the chunk is available, and with
+an C<undef> as the argument when the end of the output is reached.
+
+This method must be invoked before the C<run> method is invoked.  If
+this method is not invoked, the standard input is left unchanged
+(i.e. same as the standard output or the standard error output of the
+main process).
+
 =item $pid = $cmd->pid
 
 Return the process ID of the child process (i.e. the command's
@@ -86,6 +146,20 @@ The method returns a L<Promise>, which is resolved with a result
 object whose C<killed> method returns the number of processed to which
 the signal is sent.  If the command's process is no longer running,
 the signal is sent to no process.
+
+=item $value = $cmd->propagate_signal
+
+=item $cmd->propagate_signal ($value)
+
+Get or set whether signals to this (main) process should be propagated
+to the child (command) process or not.
+
+The value can be a non-reference value or an array reference of signal
+names.  A non-reference value is equivalent to C<['INT', 'QUIT',
+'TERM']>.  The value represents the types of the signals to propagate.
+
+This method must be invoked before the C<run> method is invoked.  If
+this method is not invoked, no signal is propagated.
 
 =back
 
@@ -132,6 +206,8 @@ Return a short error message for the developer, if available.
 =back
 
 =head1 DEPENDENCY
+
+The module requires Perl 5.10 or later.
 
 The module requires L<Promise>
 <https://github.com/wakaba/perl-promise> and L<AnyEvent::Util>.

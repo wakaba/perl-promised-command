@@ -3,6 +3,7 @@ use strict;
 use warnings;
 our $VERSION = '1.0';
 use Promise;
+use AnyEvent;
 use AnyEvent::Util qw(run_cmd);
 
 sub new ($$) {
@@ -10,6 +11,52 @@ sub new ($$) {
   ($self->{command}, @{$self->{args}}) = @{$_[1]};
   return $self;
 } # new
+
+sub wd ($;$) {
+  if (@_ > 1) {
+    $_[0]->{wd} = $_[1];
+  }
+  return $_[0]->{wd};
+} # wd
+
+sub envs ($) {
+  return $_[0]->{envs} ||= {};
+} # envs
+
+sub create_process_group ($;$) {
+  if (@_ > 1) {
+    $_[0]->{create_process_group} = $_[1];
+  }
+  return $_[0]->{create_process_group};
+} # create_process_group
+
+sub stdin ($;$) {
+  if (@_ > 1) {
+    $_[0]->{stdin} = $_[1];
+  }
+  die "Not implemented" if defined wantarray;
+} # stdin
+
+sub stdout ($;$) {
+  if (@_ > 1) {
+    $_[0]->{stdout} = $_[1];
+  }
+  die "Not implemented" if defined wantarray;
+} # stdout
+
+sub stderr ($;$) {
+  if (@_ > 1) {
+    $_[0]->{stderr} = $_[1];
+  }
+  die "Not implemented" if defined wantarray;
+} # stderr
+
+sub propagate_signal ($;$) {
+  if (@_ > 1) {
+    $_[0]->{propagate_signal} = $_[1];
+  }
+  return $_[0]->{propagate_signal};
+} # propagate_signal
 
 sub _r (@) {
   return bless {@_}, __PACKAGE__.'::Result';
@@ -22,9 +69,35 @@ sub run ($) {
   $self->{running} = 1;
   $self->{wait_promise} = Promise->new (sub {
     my ($ok, $ng) = @_;
-    (run_cmd [$self->{command}, @{$self->{args}}], '$$' => \($self->{pid}))->cb (sub {
+    my %args = ('$$' => \($self->{pid}), on_prepare => sub {
+      setpgrp if $self->{create_process_group};
+      chdir $self->{wd} or die "Can't change working directory to |$self->{wd}|"
+          if defined $self->{wd};
+      my $envs = $self->{envs} || {};
+      for (keys %$envs) {
+        if (defined $envs->{$_}) {
+          $ENV{$_} = $envs->{$_};
+        } else {
+          delete $ENV{$_};
+        }
+      }
+    });
+    $args{'<'} = $self->{stdin} if defined $self->{stdin};
+    $args{'>'} = $self->{stdout} if defined $self->{stdout};
+    $args{'2>'} = $self->{stderr} if defined $self->{stderr};
+    if ($self->{propagate_signal}) {
+      for my $sig (ref $self->{propagate_signal}
+                       ? @{$self->{propagate_signal}}
+                       : qw(INT TERM QUIT)) {
+        $self->{signal_handlers}->{$sig} = AE::signal $sig => sub {
+          kill $sig, $self->{pid} if $self->{running};
+        };
+      }
+    }
+    (run_cmd [$self->{command}, @{$self->{args}}], %args)->cb (sub {
       my $result = $_[0]->recv;
       delete $self->{running};
+      delete $self->{signal_handlers};
       if ($result & 0x7F) {
         $ng->(_r core_dump => !!($result & 0x80), signal => $result & 0x7F);
       } else {
@@ -58,6 +131,13 @@ sub send_signal ($$) {
     }
   });
 } # send_signal
+
+sub DESTROY ($) {
+  if ($_[0]->{running}) {
+    require Carp;
+    warn "$_[0] is to be destroyed while the command ($_[0]->{command}) is still running", Carp::shortmess;
+  }
+} # DESTROY
 
 package Promised::Command::Result;
 use overload '""' => 'stringify', fallback => 1;
