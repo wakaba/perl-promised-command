@@ -132,6 +132,13 @@ sub send_signal ($$) {
   });
 } # send_signal
 
+sub DESTROY ($) {
+  if ($_[0]->{running}) {
+    require Carp;
+    warn "$_[0] is to be destroyed while the command ($_[0]->{command}) is still running", Carp::shortmess;
+  }
+} # DESTROY
+
 package Promised::Command::Result;
 use overload '""' => 'stringify', fallback => 1;
 

@@ -80,11 +80,18 @@ test {
     } $c;
   };
   $cmd->wait->catch (sub { })->then (sub {
-    test {
-      my $grandchild_pid = $stdout;
-      ok not kill 0, $child_pid;
-      ok not kill 0, $grandchild_pid;
-    } $c;
+    return Promise->new (sub {
+      my $ok = $_[0];
+      my $timer; $timer = AE::timer 0.5, 0, sub {
+        test {
+          my $grandchild_pid = $stdout;
+          ok not kill 0, $child_pid;
+          ok not kill 0, $grandchild_pid;
+          $ok->();
+        } $c;
+        undef $timer;
+      };
+    });
   }, sub {
     my $error = $_[0];
     test {
@@ -287,6 +294,39 @@ for my $sig ('HUP') {
     });
   } n => 2;
 }
+
+test {
+  my $c = shift;
+  my $cmd = Promised::Command->new (['perl', '-e', q{
+    use AnyEvent;
+    use Promised::Command;
+    my $cv = AE::cv;
+    my $cmd = Promised::Command->new (['sleep', 100]);
+    $cmd->run->then (sub { syswrite STDOUT, $cmd->pid; $cv->send });
+    $cv->recv;
+  }]);
+  $cmd->stdout (\my $stdout);
+  $cmd->stderr (\my $stderr);
+  $cmd->run->then (sub {
+    return Promise->new (sub {
+      my ($ok, $ng) = @_;
+      my $timer; $timer = AE::timer 0.5, 0, sub {
+        $ok->();
+        undef $timer;
+      };
+    });
+  })->then (sub {
+    test {
+      ok kill 'INT', $stdout;
+      like $stderr, qr{Promised::Command.+to be destroyed};
+    } $c;
+  })->catch (sub { test { ok 0 } $c; warn $_[0] })->then (sub {
+    return $cmd->wait;
+  })->then (sub {
+    done $c;
+    undef $c;
+  });
+} n => 2;
 
 run_tests;
 
