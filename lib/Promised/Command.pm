@@ -89,8 +89,9 @@ sub run ($) {
       for my $sig (ref $self->{propagate_signal}
                        ? @{$self->{propagate_signal}}
                        : qw(INT TERM QUIT)) {
-        $self->{signal_handlers}->{$sig} = AE::signal $sig => sub {
-          kill $sig, $self->{pid} if $self->{running};
+        my ($from, $to) = ref $sig ? @$sig : ($sig, $sig);
+        $self->{signal_handlers}->{$from} = AE::signal $from => sub {
+          kill $to, $self->{pid} if $self->{running};
         };
       }
     }
