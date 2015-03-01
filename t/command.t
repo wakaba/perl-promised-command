@@ -327,6 +327,44 @@ test {
   });
 } n => 3, name => 'send_signal before run';
 
+test {
+  my $c = shift;
+  my $cmd = Promised::Command->new (['perl', '-e', q{
+    use AnyEvent;
+    use Promised::Command;
+    my $cv = AE::cv;
+    my $cmd = Promised::Command->new (['perl', '-e', q{
+      warn "started\n";
+      $SIG{TERM} = sub { warn "SIGTERM\n"; exit };
+      $SIG{INT} = sub { warn "SIGINT\n"; exit };
+      sleep 30;
+    }]);
+    $cmd->propagate_signal ([[INT => 'TERM']]);
+    $cmd->run->then (sub { $cmd->wait })->then (sub { $cv->send });
+    $cv->recv;
+  }]);
+  $cmd->stderr (\my $stderr);
+  $cmd->run->then (sub {
+    return Promise->new (sub {
+      my ($ok, $ng) = @_;
+      my $timer; $timer = AE::timer 0, 0.1, sub {
+        if (defined $stderr and $stderr =~ /^started$/m) {
+          $ok->();
+          undef $timer;
+        }
+      };
+    });
+  })->then (sub {
+    return $cmd->send_signal ('INT');
+  })->then (sub { return $cmd->wait })->catch (sub { warn $_[0] })->then (sub {
+    test {
+      is $stderr, "started\nSIGTERM\n";
+    } $c;
+    done $c;
+    undef $c;
+  });
+} n => 1, name => 'propagate_signal replacing';
+
 run_tests;
 
 =head1 LICENSE

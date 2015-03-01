@@ -155,8 +155,12 @@ Get or set whether signals to this (main) process should be propagated
 to the child (command) process or not.
 
 The value can be a non-reference value or an array reference of signal
-names.  A non-reference value is equivalent to C<['INT', 'QUIT',
-'TERM']>.  The value represents the types of the signals to propagate.
+names or an array reference of a pair of signal names.  A
+non-reference value is equivalent to C<['INT', 'QUIT', 'TERM']>.  A
+pair of signal names represents that when the first signal is received
+by the main process, the second signal should be sent to the child
+process instead.  The value represents the types of the signals to
+propagate.
 
 This method must be invoked before the C<run> method is invoked.  If
 this method is not invoked, no signal is propagated.
