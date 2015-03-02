@@ -114,41 +114,60 @@ test {
     }]);
     $cmd->create_process_group (1);
     $cmd->run
-        ->then (sub { syswrite STDOUT, $cmd->pid })
+        ->then (sub { syswrite STDOUT, "pid=" . $cmd->pid . "\n" })
         ->then (sub { $cmd->wait })
         ->catch (sub { })
         ->then (sub { $cv->send });
     $cv->recv;
   }]);
-  $cmd->stdout (\my $grandchild_pid);
+  $cmd->stdout (\my $stdout);
   $cmd->create_process_group (1);
   $cmd->run;
-  my $child_pid;
-  my $timer; $timer = AE::timer 0.3, 0, sub {
-    test {
-      $child_pid = $cmd->pid;
-      kill -2, getpgrp $child_pid;
-      undef $timer;
-    } $c;
-  };
-  my $timer2; $timer2 = AE::timer 0.6, 0, sub {
-    test {
-      ok not kill 0, $child_pid;
-      ok kill 0, $grandchild_pid;
-      kill 2, $grandchild_pid;
-      undef $timer2;
-    } $c;
-  };
-  $cmd->wait->catch (sub { })->then (sub {
-    test {
-      ok not kill 0, $child_pid;
-      ok not kill 0, $grandchild_pid;
-    } $c;
-  }, sub {
-    my $error = $_[0];
-    test {
-      ok 0;
-    } $c;
+
+  return Promise->new (sub {
+    my ($ok, $ng) = @_;
+    my $time = 0;
+    my $timer; $timer = AE::timer 0, 0.5, sub {
+      if (defined $stdout and $stdout =~ /^pid=(\w+)$/m) {
+        $ok->($1);
+        undef $timer;
+      } else {
+        $time += 0.5;
+        if ($time > 30) {
+          $ng->("timeout");
+          undef $timer;
+        }
+      }
+    };
+  })->then (sub {
+    my $grandchild_pid = $_[0];
+    my $child_pid;
+    my $timer; $timer = AE::timer 0.3, 0, sub {
+      test {
+        $child_pid = $cmd->pid;
+        kill -2, getpgrp $child_pid;
+        undef $timer;
+      } $c;
+    };
+    my $timer2; $timer2 = AE::timer 0.6, 0, sub {
+      test {
+        ok not kill 0, $child_pid;
+        ok kill 0, $grandchild_pid;
+        kill 2, $grandchild_pid;
+        undef $timer2;
+      } $c;
+    };
+    return $cmd->wait->catch (sub { })->then (sub {
+      test {
+        ok not kill 0, $child_pid;
+        ok not kill 0, $grandchild_pid;
+      } $c;
+    }, sub {
+      my $error = $_[0];
+      test {
+        ok 0;
+      } $c;
+    });
   })->then (sub {
     done $c;
     undef $c;
@@ -165,40 +184,58 @@ test {
       sleep 100;
     }]);
     $cmd->run
-        ->then (sub { syswrite STDOUT, $cmd->pid })
+        ->then (sub { syswrite STDOUT, "pid=" . $cmd->pid . "\n" })
         ->then (sub { $cmd->wait })
         ->catch (sub { })
         ->then (sub { $cv->send });
     $cv->recv;
   }]);
-  $cmd->stdout (\my $grandchild_pid);
+  $cmd->stdout (\my $stdout);
   $cmd->run;
-  my $child_pid;
-  my $timer; $timer = AE::timer 0.3, 0, sub {
-    test {
-      $child_pid = $cmd->pid;
-      kill 2, $child_pid;
-      undef $timer;
-    } $c;
-  };
-  my $timer2; $timer2 = AE::timer 0.6, 0, sub {
-    test {
-      ok not kill 0, $child_pid;
-      ok kill 0, $grandchild_pid;
-      kill 2, $grandchild_pid;
-      undef $timer2;
-    } $c;
-  };
-  $cmd->wait->catch (sub { })->then (sub {
-    test {
-      ok not kill 0, $child_pid;
-      ok not kill 0, $grandchild_pid;
-    } $c;
-  }, sub {
-    my $error = $_[0];
-    test {
-      ok 0;
-    } $c;
+  return Promise->new (sub {
+    my ($ok, $ng) = @_;
+    my $time = 0;
+    my $timer; $timer = AE::timer 0, 0.5, sub {
+      if (defined $stdout and $stdout =~ /^pid=(\w+)$/m) {
+        $ok->($1);
+        undef $timer;
+      } else {
+        $time += 0.5;
+        if ($time > 30) {
+          $ng->("timeout");
+          undef $timer;
+        }
+      }
+    };
+  })->then (sub {
+    my $grandchild_pid = $_[0];
+    my $child_pid;
+    my $timer; $timer = AE::timer 0.3, 0, sub {
+      test {
+        $child_pid = $cmd->pid;
+        kill 2, $child_pid;
+        undef $timer;
+      } $c;
+    };
+    my $timer2; $timer2 = AE::timer 0.6, 0, sub {
+      test {
+        ok not kill 0, $child_pid;
+        ok kill 0, $grandchild_pid;
+        kill 2, $grandchild_pid;
+        undef $timer2;
+      } $c;
+    };
+    $cmd->wait->catch (sub { })->then (sub {
+      test {
+        ok not kill 0, $child_pid;
+        ok not kill 0, $grandchild_pid;
+      } $c;
+    }, sub {
+      my $error = $_[0];
+      test {
+        ok 0;
+      } $c;
+    });
   })->then (sub {
     done $c;
     undef $c;
