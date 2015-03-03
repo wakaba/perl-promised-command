@@ -365,6 +365,31 @@ test {
   });
 } n => 2;
 
+test {
+  my $c = shift;
+  my $cmd = Promised::Command->new (['perl', '-e', q{
+    use Promised::Command;
+    my $cmd = Promised::Command->new (['perl', '-e', q{
+      $SIG{INT} = sub { print "SIGINT\n" };
+      sleep 10;
+    }]);
+    $cmd->signal_before_destruction ('INT');
+    $cmd->run;
+  }]);
+  $cmd->stdout (\my $stdout);
+  $cmd->stderr (\my $stderr);
+  $cmd->run->then (sub {
+    $cmd->wait->then (sub {
+      test {
+        is $stdout, "SIGINT\n";
+        like $stderr, qr{ is to be destroyed while the command \(perl\) is still running };
+      } $c;
+      done $c;
+      undef $c;
+    });
+  });
+} n => 2, name => 'signal_before_destruction';
+
 run_tests;
 
 =head1 LICENSE
