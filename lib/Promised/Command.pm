@@ -58,6 +58,13 @@ sub propagate_signal ($;$) {
   return $_[0]->{propagate_signal};
 } # propagate_signal
 
+sub signal_before_destruction ($;$) {
+  if (@_ > 1) {
+    $_[0]->{signal_before_destruction} = $_[1];
+  }
+  return $_[0]->{signal_before_destruction};
+} # signal_before_destruction
+
 sub _r (@) {
   return bless {@_}, __PACKAGE__.'::Result';
 } # _r
@@ -135,9 +142,13 @@ sub send_signal ($$) {
 } # send_signal
 
 sub DESTROY ($) {
-  if ($_[0]->{running}) {
+  my $self = $_[0];
+  if ($self->{running}) {
     require Carp;
-    warn "$_[0] is to be destroyed while the command ($_[0]->{command}) is still running", Carp::shortmess;
+    warn "$self is to be destroyed while the command ($self->{command}) is still running", Carp::shortmess;
+    if (defined $self->{signal_before_destruction}) {
+      kill $self->{signal_before_destruction}, $self->{pid};
+    }
   }
 } # DESTROY
 

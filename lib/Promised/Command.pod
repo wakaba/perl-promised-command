@@ -170,6 +170,21 @@ If signals are to be propagated, any other signal handling should be
 done through L<Promised::Command::Signals> to avoid confliction of
 signal handlers.
 
+=item $signal = $cmd->signal_before_destruction
+
+=item $cmd->signal_before_destruction ($signal)
+
+Get or set the signal (e.g. C<KILL> or C<TERM>) which should be sent
+to the command (child) process if it is still running when the command
+object is destroyed (i.e. the I<$cmd> object is destroyed without its
+C<wait> method invoked).  This feature is useful when the command
+object can be discarded by unexpected shutdown of the application
+(e.g. Perl runtime error) but still need to ensure that child process
+should be terminated.
+
+This method must be invoked before the C<run> method is invoked.  If
+this method is not invoked, no signal is sent.
+
 =back
 
 =head1 RESULT OBJECT
