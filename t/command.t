@@ -358,7 +358,7 @@ test {
     return $cmd->send_signal ('INT');
   })->then (sub { return $cmd->wait })->catch (sub { warn $_[0] })->then (sub {
     test {
-      is $stderr, "started\nSIGTERM\n";
+      like $stderr, qr{started\nSIGTERM\n};
     } $c;
     done $c;
     undef $c;

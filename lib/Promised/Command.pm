@@ -90,9 +90,10 @@ sub run ($) {
                        ? @{$self->{propagate_signal}}
                        : qw(INT TERM QUIT)) {
         my ($from, $to) = ref $sig ? @$sig : ($sig, $sig);
-        $self->{signal_handlers}->{$from} = AE::signal $from => sub {
+        require Promised::Command::Signals;
+        $self->{signal_handlers}->{$from} = Promised::Command::Signals->add_handler ($from => sub {
           kill $to, $self->{pid} if $self->{running};
-        };
+        });
       }
     }
     (run_cmd [$self->{command}, @{$self->{args}}], %args)->cb (sub {
