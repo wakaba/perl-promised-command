@@ -160,10 +160,15 @@ non-reference value is equivalent to C<['INT', 'QUIT', 'TERM']>.  A
 pair of signal names represents that when the first signal is received
 by the main process, the second signal should be sent to the child
 process instead.  The value represents the types of the signals to
-propagate.
+propagate.  Signals specified by this method caught by the main
+process result in terminating the main process after the propagation.
 
 This method must be invoked before the C<run> method is invoked.  If
 this method is not invoked, no signal is propagated.
+
+If signals are to be propagated, any other signal handling should be
+done through L<Promised::Command::Signals> to avoid confliction of
+signal handlers.
 
 =back
 

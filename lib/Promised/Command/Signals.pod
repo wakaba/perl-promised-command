@@ -1,0 +1,74 @@
+=head1 NAME
+
+Promised::Command::Signals - Promise-aware signal handling
+
+=head1 SYNOPSIS
+
+  use Promised::Command::Signals;
+  my $sig = Promised::Command::Signals->add_handler (TERM => sub {
+    return write_log ('SIGTERM received')->then (sub {
+      return $server->stop;
+    });
+  });
+
+=head1 DESCRIPTION
+
+The C<Promised::Command::Signals> module defines a signal handler
+registry where handler codes are invoked when a signal is received.
+If the handler codes return promises, the default action of the signal
+(i.e. terminating the script) is invoked after the resolution or
+rejection of them.
+
+=head1 METHODS
+
+The following methods are available:
+
+=over 4
+
+=item $sig = Promised::Command::Signals->add_handler ($name, $code)
+
+Register a signal handler code.
+
+The first argument must be a name of the signal, such as C<INT> or
+C<HUP>.  At the time of writing, signals C<INT>, C<TERM>, C<QUIT>, and
+C<HUP> are supported.
+
+The second argument must be a code reference.  When invoked, it can
+return a promise.  Any exception invoked by the code is treated as if
+there were a rejected promise with that exception.  The handler is
+invoked with a code reference, which, when invoked, cancels the
+default action of the signal.  For example, a C<INT> signal is
+canceled, the script is not terminated after the processing of signal
+handlers.  Note that canceling the default action does not prevent
+from other signal handler codes invoked.
+
+It returns an object.  The application must preserve a reference to it
+while the handler code should be effective.
+
+=item undef $sig
+
+When all references to the object returned by the C<add_handler>
+method is discarded, the code is removed from the registry so that it
+is no longer invoked by the signal.
+
+=back
+
+=head1 DEPENDENCY
+
+The module requires Perl 5.10 or later.
+
+The module requires L<Promise>
+<https://github.com/wakaba/perl-promise> and L<AnyEvent::Util>.
+
+=head1 AUTHOR
+
+Wakaba <wakaba@suikawiki.org>.
+
+=head1 LICENSE
+
+Copyright 2015 Wakaba <wakaba@suikawiki.org>.
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut
