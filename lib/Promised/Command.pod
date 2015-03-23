@@ -57,6 +57,9 @@ non-zero.  Note also that failure to execute the command
 (e.g. command-not-found error) is also result in resolving the promise
 with a successful result object whose exit code is non-zero.
 
+If the command has terminated by an uncaught signal, the promise is
+rejected with a result object whose C<is_error> method returns true.
+
 =item $boolean = $cmd->create_process_group
 
 =item $cmd->create_process_group ($boolean)
@@ -184,6 +187,27 @@ should be terminated.
 
 This method must be invoked before the C<run> method is invoked.  If
 this method is not invoked, no signal is sent.
+
+=item $seconds = $cmd->timeout
+
+=item $cmd->timeout ($seconds)
+
+Get or set the timeout from the execution of the command in seconds.
+If a positive number is specified, the signal specified by the
+C<timeout_signal> method is sent to the command's process, if any.
+Otherwise no timeout is set.
+
+This method must be invoked before the C<run> method is invoked.
+
+=item $signal = $cmd->timeout_signal
+
+=item $cmd->timeout_signal ($signal)
+
+Get or set the signal (e.g. C<KILL> or C<TERM>) which should be sent
+when the C<timeout> seconds has elapsed before the command returns.
+It is set to C<TERM> unless explicitly specified.
+
+This method must be invoked before the C<run> method is invoked.
 
 =back
 
