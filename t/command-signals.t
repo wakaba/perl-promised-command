@@ -35,7 +35,7 @@ test {
     my $result = $_[0];
     test {
       is $result->exit_code, 1;
-      like $stderr, qr{sigterm received!\n.*SIGTERM received};
+      like $stderr, qr{SIGTERM received\nsigterm received!\n.*terminated by SIGTERM};
     } $c;
     done $c;
     undef $c;
@@ -154,7 +154,7 @@ test {
     my $result = $_[0];
     test {
       is $result->exit_code, 1;
-      like $stderr, qr{(?:sigint received 1\nsigint received 2\n|sigint received 2\nsigint received 1\n).*SIGINT received};
+      like $stderr, qr{SIGINT received\n(?:sigint received 1\nsigint received 2\n|sigint received 2\nsigint received 1\n).*terminated by SIGINT};
     } $c;
     done $c;
     undef $c;
@@ -194,7 +194,7 @@ test {
     my $result = $_[0];
     test {
       is $result->exit_code, 1;
-      like $stderr, qr{sigint received 2\n.*SIGINT received};
+      like $stderr, qr{SIGINT received\nsigint received 2\n.*terminated by SIGINT};
     } $c;
     done $c;
     undef $c;
@@ -239,7 +239,7 @@ test {
     my $result = $_[0];
     test {
       is $result->exit_code, 1;
-      like $stderr, qr{sigquit received!\nsigquit promise resolved\n.*SIGQUIT received};
+      like $stderr, qr{SIGQUIT received\nsigquit received!\nsigquit promise resolved\n.*terminated by SIGQUIT};
     } $c;
     done $c;
     undef $c;
@@ -274,7 +274,7 @@ test {
     my $result = $_[0];
     test {
       is $result->exit_code, 1;
-      like $stderr, qr{Died within signal handler: sigterm received! at .+\n.*SIGTERM received};
+      like $stderr, qr{SIGTERM received\n.*Died within signal handler: sigterm received! at .+\n.*terminated by SIGTERM};
     } $c;
     done $c;
     undef $c;
@@ -310,7 +310,7 @@ test {
     my $result = $_[0];
     test {
       is $result->exit_code, 1;
-      like $stderr, qr{Died within signal handler: sigterm received!\n.*SIGTERM received};
+      like $stderr, qr{SIGTERM received\n.*Died within signal handler: sigterm received!\n.*terminated by SIGTERM};
     } $c;
     done $c;
     undef $c;
@@ -358,7 +358,7 @@ test {
     my $result = $_[0];
     test {
       is $result->exit_code, 1;
-      like $stderr, qr{sigterm received!\nsigint received\n.*SIGINT received};
+      like $stderr, qr{SIGTERM received\nsigterm received!\n.*SIGINT received\nsigint received\n.*terminated by SIGINT};
     } $c;
     done $c;
     undef $c;

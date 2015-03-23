@@ -227,7 +227,7 @@ test {
     my $result = $_[0];
     test {
       isa_ok $result, 'Promised::Command::Result';
-      ok $result->is_success;
+      ok $result->is_error;
       is $result->signal, 2;
       ok not $result->core_dump;
       is $result->exit_code, -1;
@@ -255,7 +255,7 @@ test {
     my $result = $_[0];
     test {
       isa_ok $result, 'Promised::Command::Result';
-      ok $result->is_success;
+      ok $result->is_error;
       is $result->signal, 2;
       ok not $result->core_dump;
       is $result->exit_code, -1;
@@ -358,7 +358,7 @@ test {
     return $cmd->send_signal ('INT');
   })->then (sub { return $cmd->wait })->catch (sub { warn $_[0] })->then (sub {
     test {
-      like $stderr, qr{started\nSIGTERM\n};
+      like $stderr, qr{started\n.*SIGINT received\nSIGTERM\n.*terminated by SIGINT};
     } $c;
     done $c;
     undef $c;

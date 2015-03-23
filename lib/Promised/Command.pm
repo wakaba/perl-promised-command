@@ -65,6 +65,20 @@ sub signal_before_destruction ($;$) {
   return $_[0]->{signal_before_destruction};
 } # signal_before_destruction
 
+sub timeout ($;$) {
+  if (@_ > 1) {
+    $_[0]->{timeout} = $_[1];
+  }
+  return $_[0]->{timeout};
+} # timeout
+
+sub timeout_signal ($;$) {
+  if (@_ > 1) {
+    $_[0]->{timeout_signal} = $_[1];
+  }
+  return $_[0]->{timeout_signal} || 'TERM';
+} # timeout_signal
+
 sub _r (@) {
   return bless {@_}, __PACKAGE__.'::Result';
 } # _r
@@ -103,12 +117,17 @@ sub run ($) {
         });
       }
     }
+    $self->{timer} = AE::timer $self->{timeout}, 0, sub {
+      $self->send_signal ($self->timeout_signal);
+      delete $self->{timer};
+    } if $self->{timeout};
     (run_cmd [$self->{command}, @{$self->{args}}], %args)->cb (sub {
       my $result = $_[0]->recv;
       delete $self->{running};
       delete $self->{signal_handlers};
+      delete $self->{timer};
       if ($result & 0x7F) {
-        $ng->(_r core_dump => !!($result & 0x80), signal => $result & 0x7F);
+        $ng->(_r is_error => 1, core_dump => !!($result & 0x80), signal => $result & 0x7F);
       } else {
         $ok->(_r exit_code => $result >> 8);
       }
