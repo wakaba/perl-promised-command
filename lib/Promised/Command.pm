@@ -189,13 +189,15 @@ sub message ($) { $_[0]->{message} }
 sub killed ($) { $_[0]->{killed} }
 
 sub stringify ($) {
-  if ($_[0]->{is_error}) {
+  if ($_[0]->{is_error} and defined $_[0]->{message}) {
     return "Error: $_[0]->{message}";
   } elsif (defined $_[0]->{signal}) {
     return sprintf "Exit with signal %d%s",
         $_[0]->{signal}, $_[0]->{core_dump} ? ' with core dump' : '';
   } elsif (defined $_[0]->{exit_code}) {
     return sprintf "Exit code %d", $_[0]->{exit_code};
+  } elsif ($_[0]->{is_error}) {
+    return 'Unknown error';
   } else {
     return 'Success';
   }
