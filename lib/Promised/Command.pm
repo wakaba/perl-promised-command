@@ -6,6 +6,9 @@ use Promise;
 use AnyEvent;
 use AnyEvent::Util qw(run_cmd);
 
+my $DEBUG = $ENV{PROMISED_COMMAND_DEBUG};
+my $CommandID = int rand 10000;
+
 sub new ($$) {
   my $self = bless {args => []}, $_[0];
   ($self->{command}, @{$self->{args}}) = @{$_[1]};
@@ -121,11 +124,15 @@ sub run ($) {
       $self->send_signal ($self->timeout_signal);
       delete $self->{timer};
     } if $self->{timeout};
-    (run_cmd [$self->{command}, @{$self->{args}}], %args)->cb (sub {
+    my $command = [$self->{command}, @{$self->{args}}];
+    my $command_id = $CommandID++;
+    warn "Command[$command_id]: Start |@$command|\n" if $DEBUG;
+    (run_cmd $command, %args)->cb (sub {
       my $result = $_[0]->recv;
       delete $self->{running};
       delete $self->{signal_handlers};
       delete $self->{timer};
+      warn "Command[$command_id]: Done @{[$result >> 8]}\n" if $DEBUG;
       if ($result & 0x7F) {
         $ng->(_r is_error => 1, core_dump => !!($result & 0x80), signal => $result & 0x7F);
       } else {
