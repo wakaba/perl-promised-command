@@ -204,10 +204,9 @@ test {
   eval {
     $cmd->pid;
   };
-  my $e = $@;
-  isa_ok $e, 'Promised::Command::Result';
-  ok $e->is_error;
-  is $e->message, 'Not yet |run|';
+  isa_ok $@, 'Promised::Command::Result';
+  ok $@->is_error;
+  is $@->message, 'Not yet |run|';
   done $c;
 } n => 3, name => 'pid before run';
 
