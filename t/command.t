@@ -341,7 +341,7 @@ test {
       sleep 30;
     }]);
     $cmd->propagate_signal ([[INT => 'TERM']]);
-    $cmd->run->then (sub { $cmd->wait })->then (sub { $cv->send });
+    $cmd->run->then (sub { $cmd->wait })->then (sub { warn "child done"; $cv->send });
     $cv->recv;
   }]);
   $cmd->stderr (\my $stderr);
