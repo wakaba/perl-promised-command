@@ -293,13 +293,13 @@ for my $sig (2, 3, 15) {
     })->catch (sub {
       my $error = $_[0];
       test {
-        ok 0;
+        ok 0, $error;
       } $c;
     })->then (sub {
       done $c;
       undef $c;
     });
-  } n => 2;
+  } n => 2, name => $sig;
 }
 
 for my $sig ('HUP') {
