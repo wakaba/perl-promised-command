@@ -308,7 +308,7 @@ for my $sig ('HUP') {
     $cmd->stdout (\my $grandchild_pid);
     $cmd->run;
     my $child_pid;
-    my $timer; $timer = AE::timer 1, 0, sub {
+    my $timer; $timer = AE::timer 1.5, 0, sub {
       test {
         $child_pid = $cmd->pid;
         kill $sig, $child_pid;
