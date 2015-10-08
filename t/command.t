@@ -337,11 +337,14 @@ test {
     my $cmd = Promised::Command->new (['perl', '-e', q{
       $SIG{TERM} = sub { warn "SIGTERM\n"; exit };
       $SIG{INT} = sub { warn "SIGINT\n"; exit };
-      warn "started\n";
+      warn "started1\n";
       sleep 30;
     }]);
     $cmd->propagate_signal ([[INT => 'TERM']]);
-    $cmd->run->then (sub { $cmd->wait })->then (sub { warn "child done"; $cv->send });
+    $cmd->run->then (sub {
+      warn "started2\n";
+      return $cmd->wait;
+    })->then (sub { warn "child done"; $cv->send });
     $cv->recv;
   }]);
   $cmd->stderr (\my $stderr);
@@ -349,7 +352,9 @@ test {
     return Promise->new (sub {
       my ($ok, $ng) = @_;
       my $timer; $timer = AE::timer 0, 0.1, sub {
-        if (defined $stderr and $stderr =~ /^started$/m) {
+        if (defined $stderr and
+            $stderr =~ /^started1$/m and
+            $stderr =~ /^started2$/m) {
           $ok->();
           undef $timer;
         }
@@ -359,7 +364,7 @@ test {
     return $cmd->send_signal ('INT');
   })->then (sub { return $cmd->wait })->catch (sub { warn $_[0] })->then (sub {
     test {
-      like $stderr, qr{started\n.*SIGINT received\nSIGTERM\n.*terminated by SIGINT}s;
+      like $stderr, qr{started.*\nstarted.*\n.*SIGINT received\nSIGTERM\n.*terminated by SIGINT}s;
     } $c;
     done $c;
     undef $c;
