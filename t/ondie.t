@@ -72,7 +72,7 @@ test {
   $cmd->create_process_group (1);
   $cmd->run;
   my $child_pid;
-  my $timer; $timer = AE::timer 0.5, 0, sub {
+  my $timer; $timer = AE::timer 1, 0, sub {
     test {
       $child_pid = $cmd->pid;
       kill -2, getpgrp $child_pid;
@@ -308,7 +308,7 @@ for my $sig ('HUP') {
     $cmd->stdout (\my $grandchild_pid);
     $cmd->run;
     my $child_pid;
-    my $timer; $timer = AE::timer 0.3, 0, sub {
+    my $timer; $timer = AE::timer 1, 0, sub {
       test {
         $child_pid = $cmd->pid;
         kill $sig, $child_pid;
@@ -370,7 +370,7 @@ test {
   my $cmd = Promised::Command->new (['perl', '-e', q{
     use Promised::Command;
     my $cmd = Promised::Command->new (['perl', '-e', q{
-      $SIG{INT} = sub { print "SIGINT\n" };
+      $SIG{INT} = sub { syswrite STDOUT, "SIGINT\n" };
       sleep 10;
     }]);
     $cmd->signal_before_destruction ('INT');
