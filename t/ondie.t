@@ -90,8 +90,8 @@ test {
       })->then (sub {
         test {
           my $grandchild_pid = $stdout;
-          ok not kill 0, $child_pid;
-          ok not kill 0, $grandchild_pid;
+          ok !(kill 0, $child_pid), "child = $child_pid dead";
+          ok !(kill 0, $grandchild_pid), "grandchild = $grandchild_pid dead";
         } $c;
       });
     });
@@ -162,8 +162,8 @@ test {
     };
     return $cmd->wait->catch (sub { })->then (sub {
       test {
-        ok not kill 0, $child_pid;
-        ok not kill 0, $grandchild_pid;
+        ok !(kill 0, $child_pid), "child = $child_pid dead";
+        ok !(kill 0, $grandchild_pid), "grandchild = $grandchild_pid dead";
       } $c;
     }, sub {
       my $error = $_[0];
@@ -230,8 +230,8 @@ test {
     };
     $cmd->wait->catch (sub { })->then (sub {
       test {
-        ok not kill 0, $child_pid;
-        ok not kill 0, $grandchild_pid;
+        ok !(kill 0, $child_pid), "child = $child_pid dead";
+        ok !(kill 0, $grandchild_pid), "grandchild = $grandchild_pid dead";
       } $c;
     }, sub {
       my $error = $_[0];
