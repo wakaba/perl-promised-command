@@ -336,11 +336,12 @@ test {
     my $cv = AE::cv;
     my $cmd = Promised::Command->new (['perl', '-e', q{
       $SIG{TERM} = sub { warn "SIGTERM\n"; exit };
+      $SIG{QUIT} = sub { warn "SIGQUIT\n"; exit };
       $SIG{INT} = sub { warn "SIGINT\n"; exit };
       warn "started1\n";
       sleep 30;
     }]);
-    $cmd->propagate_signal ([[INT => 'TERM']]);
+    $cmd->propagate_signal ([[INT => 'QUIT']]);
     $cmd->run->then (sub {
       warn "started2\n";
       return $cmd->wait;
@@ -364,7 +365,7 @@ test {
     return $cmd->send_signal ('INT');
   })->then (sub { return $cmd->wait })->catch (sub { warn $_[0] })->then (sub {
     test {
-      like $stderr, qr{started.*\nstarted.*\n.*SIGINT received\nSIGTERM\n.*terminated by SIGINT}s;
+      like $stderr, qr{started.*\nstarted.*\n.*SIGINT received\nSIGQUIT\n.*terminated by SIGINT}s;
     } $c;
     done $c;
     undef $c;
