@@ -368,13 +368,18 @@ test {
 test {
   my $c = shift;
   my $cmd = Promised::Command->new (['perl', '-e', q{
+    use AnyEvent;
     use Promised::Command;
     my $cmd = Promised::Command->new (['perl', '-e', q{
       $SIG{INT} = sub { syswrite STDOUT, "SIGINT\n" };
       sleep 10;
     }]);
     $cmd->signal_before_destruction ('INT');
-    $cmd->run;
+    my $cv = AE::cv;
+    $cmd->run->then (sub {
+      $cv->send;
+    });
+    $cv->recv;
   }]);
   $cmd->stdout (\my $stdout);
   $cmd->stderr (\my $stderr);
