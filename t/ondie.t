@@ -377,7 +377,10 @@ test {
     $cmd->signal_before_destruction ('INT');
     my $cv = AE::cv;
     $cmd->run->then (sub {
-      $cv->send;
+      my $timer; $timer = AE::timer 1, 0, sub {
+        $cv->send;
+        undef $timer;
+      };
     });
     $cv->recv;
   }]);
