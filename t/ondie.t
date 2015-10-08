@@ -30,20 +30,21 @@ test {
   }]);
   $cmd->create_process_group (1);
   $cmd->stdout (\my $stdout);
-  $cmd->run;
-  my $timer; $timer = AE::timer 1, 0, sub {
-    $cmd->send_signal ('INT');
-    undef $timer;
-  };
-  $cmd->wait->then (sub {
-    test {
-      my $pid = $stdout;
-      ok not kill 0, $pid;
-    } $c;
-  }, sub {
+  $cmd->run->then (sub {
+    my $timer; $timer = AE::timer 1, 0, sub {
+      $cmd->send_signal ('INT');
+      undef $timer;
+    };
+    return $cmd->wait->then (sub {
+      test {
+        my $pid = $stdout;
+        ok not kill 0, $pid;
+      } $c;
+    });
+  })->catch (sub {
     my $error = $_[0];
     test {
-      ok $error->is_success;
+      ok $error->is_success, "$error";
     } $c;
   })->then (sub {
     done $c;
@@ -89,8 +90,8 @@ test {
       })->then (sub {
         test {
           my $grandchild_pid = $stdout;
-          ok not kill 0, $child_pid;
-          ok not kill 0, $grandchild_pid;
+          ok !(kill 0, $child_pid), "child = $child_pid dead";
+          ok !(kill 0, $grandchild_pid), "grandchild = $grandchild_pid dead";
         } $c;
       });
     });
@@ -161,8 +162,8 @@ test {
     };
     return $cmd->wait->catch (sub { })->then (sub {
       test {
-        ok not kill 0, $child_pid;
-        ok not kill 0, $grandchild_pid;
+        ok !(kill 0, $child_pid), "child = $child_pid dead";
+        ok !(kill 0, $grandchild_pid), "grandchild = $grandchild_pid dead";
       } $c;
     }, sub {
       my $error = $_[0];
@@ -229,8 +230,8 @@ test {
     };
     $cmd->wait->catch (sub { })->then (sub {
       test {
-        ok not kill 0, $child_pid;
-        ok not kill 0, $grandchild_pid;
+        ok !(kill 0, $child_pid), "child = $child_pid dead";
+        ok !(kill 0, $grandchild_pid), "grandchild = $grandchild_pid dead";
       } $c;
     }, sub {
       my $error = $_[0];
@@ -258,9 +259,10 @@ for my $sig (2, 3, 15) {
       $cmd->run
           ->then (sub { syswrite STDOUT, $cmd->pid })
           ->then (sub { $cmd->wait })
-          ->catch (sub { })
-          ->then (sub { $cv->send });
+          ->catch (sub { syswrite STDERR, "caught: |$_[0]|\n" })
+          ->then (sub { syswrite STDERR, "grandchild done\n"; $cv->send });
       $cv->recv;
+      syswrite STDERR, "child done\n";
     }]);
     $cmd->stdout (\my $grandchild_pid);
     $cmd->run->then (sub {
@@ -272,22 +274,32 @@ for my $sig (2, 3, 15) {
           undef $timer;
         } $c;
       };
-      return $cmd->wait->catch (sub { })->then (sub {
+      return $cmd->wait->catch (sub {
+        warn "caught: |$_[0]|";
+      })->then (sub {
+        return Promise->new (sub {
+          my $ok = $_[0];
+          my $timer; $timer = AE::timer 1, 0, sub {
+            undef $timer;
+            $ok->();
+          };
+        });
+      })->then (sub {
         test {
-          ok not kill 0, $child_pid;
-          ok not kill 0, $grandchild_pid;
+          ok !(kill 0, $child_pid), "child = $child_pid dead";
+          ok !(kill 0, $grandchild_pid), "grandchild = $grandchild_pid dead";
         } $c;
       });
     })->catch (sub {
       my $error = $_[0];
       test {
-        ok 0;
+        ok 0, $error;
       } $c;
     })->then (sub {
       done $c;
       undef $c;
     });
-  } n => 2;
+  } n => 2, name => $sig;
 }
 
 for my $sig ('HUP') {
