@@ -335,9 +335,9 @@ test {
     use Promised::Command;
     my $cv = AE::cv;
     my $cmd = Promised::Command->new (['perl', '-e', q{
-      warn "started\n";
       $SIG{TERM} = sub { warn "SIGTERM\n"; exit };
       $SIG{INT} = sub { warn "SIGINT\n"; exit };
+      warn "started\n";
       sleep 30;
     }]);
     $cmd->propagate_signal ([[INT => 'TERM']]);
