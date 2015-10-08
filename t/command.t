@@ -365,7 +365,7 @@ test {
     return $cmd->send_signal ('INT');
   })->then (sub { return $cmd->wait })->catch (sub { warn $_[0] })->then (sub {
     test {
-      like $stderr, qr{started.*\nstarted.*\n.*SIGINT received\nSIGQUIT\n.*terminated by SIGINT}s;
+      like $stderr, qr{started.*\nstarted.*\n.*SIGINT received\n(?:SIGQUIT\n.*terminated by SIGINT|.*terminated by SIGINT.*\nSIGQUIT)}s;
     } $c;
     done $c;
     undef $c;
