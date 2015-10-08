@@ -31,7 +31,7 @@ test {
   $cmd->create_process_group (1);
   $cmd->stdout (\my $stdout);
   $cmd->run;
-  my $timer; $timer = AE::timer 0.5, 0, sub {
+  my $timer; $timer = AE::timer 1, 0, sub {
     $cmd->send_signal ('INT');
     undef $timer;
   };
@@ -142,14 +142,14 @@ test {
   })->then (sub {
     my $grandchild_pid = $_[0];
     my $child_pid;
-    my $timer; $timer = AE::timer 0.3, 0, sub {
+    my $timer; $timer = AE::timer 0.5, 0, sub {
       test {
         $child_pid = $cmd->pid;
         kill -2, getpgrp $child_pid;
         undef $timer;
       } $c;
     };
-    my $timer2; $timer2 = AE::timer 0.6, 0, sub {
+    my $timer2; $timer2 = AE::timer 1, 0, sub {
       test {
         ok not kill 0, $child_pid;
         ok kill 0, $grandchild_pid;
@@ -210,14 +210,14 @@ test {
   })->then (sub {
     my $grandchild_pid = $_[0];
     my $child_pid;
-    my $timer; $timer = AE::timer 0.3, 0, sub {
+    my $timer; $timer = AE::timer 0.5, 0, sub {
       test {
         $child_pid = $cmd->pid;
         kill 2, $child_pid;
         undef $timer;
       } $c;
     };
-    my $timer2; $timer2 = AE::timer 0.6, 0, sub {
+    my $timer2; $timer2 = AE::timer 1, 0, sub {
       test {
         ok not kill 0, $child_pid;
         ok kill 0, $grandchild_pid;
@@ -263,7 +263,7 @@ for my $sig (2, 3, 15) {
     $cmd->stdout (\my $grandchild_pid);
     $cmd->run;
     my $child_pid;
-    my $timer; $timer = AE::timer 0.6, 0, sub {
+    my $timer; $timer = AE::timer 1, 0, sub {
       test {
         $child_pid = $cmd->pid;
         kill $sig, $child_pid;
