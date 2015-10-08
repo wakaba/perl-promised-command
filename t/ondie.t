@@ -259,9 +259,10 @@ for my $sig (2, 3, 15) {
       $cmd->run
           ->then (sub { syswrite STDOUT, $cmd->pid })
           ->then (sub { $cmd->wait })
-          ->catch (sub { })
-          ->then (sub { $cv->send });
+          ->catch (sub { warn "caught: |$_[0]|" })
+          ->then (sub { warn "grandchild done"; $cv->send });
       $cv->recv;
+      warn "child done";
     }]);
     $cmd->stdout (\my $grandchild_pid);
     $cmd->run->then (sub {
@@ -285,8 +286,8 @@ for my $sig (2, 3, 15) {
         });
       })->then (sub {
         test {
-          ok !(kill 0, $child_pid), "child = $child_pid";
-          ok !(kill 0, $grandchild_pid), "grandchild = $grandchild_pid";
+          ok !(kill 0, $child_pid), "child = $child_pid dead";
+          ok !(kill 0, $grandchild_pid), "grandchild = $grandchild_pid dead";
         } $c;
       });
     })->catch (sub {
