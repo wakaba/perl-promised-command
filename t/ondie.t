@@ -276,9 +276,17 @@ for my $sig (2, 3, 15) {
       return $cmd->wait->catch (sub {
         warn "caught: |$_[0]|";
       })->then (sub {
+        return Promise->new (sub {
+          my $ok = $_[0];
+          my $timer; $timer = AE::timer 1, 0, sub {
+            undef $timer;
+            $ok->();
+          };
+        });
+      })->then (sub {
         test {
-          ok not (kill 0, $child_pid), "child = $child_pid";
-          ok not (kill 0, $grandchild_pid), "grandchild = $grandchild_pid";
+          ok !(kill 0, $child_pid), "child = $child_pid";
+          ok !(kill 0, $grandchild_pid), "grandchild = $grandchild_pid";
         } $c;
       });
     })->catch (sub {
