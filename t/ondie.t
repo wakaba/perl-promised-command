@@ -273,10 +273,12 @@ for my $sig (2, 3, 15) {
           undef $timer;
         } $c;
       };
-      return $cmd->wait->catch (sub { })->then (sub {
+      return $cmd->wait->catch (sub {
+        warn "caught: |$_[0]|";
+      })->then (sub {
         test {
-          ok not kill 0, $child_pid;
-          ok not kill 0, $grandchild_pid;
+          ok not (kill 0, $child_pid), "child = $child_pid";
+          ok not (kill 0, $grandchild_pid), "grandchild = $grandchild_pid";
         } $c;
       });
     })->catch (sub {
