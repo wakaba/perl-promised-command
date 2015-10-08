@@ -30,20 +30,21 @@ test {
   }]);
   $cmd->create_process_group (1);
   $cmd->stdout (\my $stdout);
-  $cmd->run;
-  my $timer; $timer = AE::timer 1, 0, sub {
-    $cmd->send_signal ('INT');
-    undef $timer;
-  };
-  $cmd->wait->then (sub {
-    test {
-      my $pid = $stdout;
-      ok not kill 0, $pid;
-    } $c;
-  }, sub {
+  $cmd->run->then (sub {
+    my $timer; $timer = AE::timer 1, 0, sub {
+      $cmd->send_signal ('INT');
+      undef $timer;
+    };
+    return $cmd->wait->then (sub {
+      test {
+        my $pid = $stdout;
+        ok not kill 0, $pid;
+      } $c;
+    });
+  })->catch (sub {
     my $error = $_[0];
     test {
-      ok $error->is_success;
+      ok $error->is_success, "$error";
     } $c;
   })->then (sub {
     done $c;
