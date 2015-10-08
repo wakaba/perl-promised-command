@@ -31,7 +31,7 @@ test {
   $cmd->create_process_group (1);
   $cmd->stdout (\my $stdout);
   $cmd->run;
-  my $timer; $timer = AE::timer 0.5, 0, sub {
+  my $timer; $timer = AE::timer 1, 0, sub {
     $cmd->send_signal ('INT');
     undef $timer;
   };
@@ -70,32 +70,34 @@ test {
   }]);
   $cmd->stdout (\my $stdout);
   $cmd->create_process_group (1);
-  $cmd->run;
-  my $child_pid;
-  my $timer; $timer = AE::timer 0.5, 0, sub {
-    test {
-      $child_pid = $cmd->pid;
-      kill -2, getpgrp $child_pid;
-      undef $timer;
-    } $c;
-  };
-  $cmd->wait->catch (sub { })->then (sub {
-    return Promise->new (sub {
-      my $ok = $_[0];
-      my $timer; $timer = AE::timer 0.5, 0, sub {
+  $cmd->run->then (sub {
+    my $child_pid;
+    my $timer; $timer = AE::timer 2, 0, sub {
+      test {
+        $child_pid = $cmd->pid;
+        kill -2, getpgrp $child_pid;
+        undef $timer;
+      } $c;
+    };
+    return $cmd->wait->catch (sub { })->then (sub {
+      return Promise->new (sub {
+        my $ok = $_[0];
+        my $timer; $timer = AE::timer 0.5, 0, sub {
+          $ok->();
+          undef $timer;
+        };
+      })->then (sub {
         test {
           my $grandchild_pid = $stdout;
           ok not kill 0, $child_pid;
           ok not kill 0, $grandchild_pid;
-          $ok->();
         } $c;
-        undef $timer;
-      };
+      });
     });
-  }, sub {
+  })->catch (sub {
     my $error = $_[0];
     test {
-      ok 0;
+      ok 0, $error;
     } $c;
   })->then (sub {
     done $c;
@@ -142,14 +144,14 @@ test {
   })->then (sub {
     my $grandchild_pid = $_[0];
     my $child_pid;
-    my $timer; $timer = AE::timer 0.3, 0, sub {
+    my $timer; $timer = AE::timer 1, 0, sub {
       test {
         $child_pid = $cmd->pid;
         kill -2, getpgrp $child_pid;
         undef $timer;
       } $c;
     };
-    my $timer2; $timer2 = AE::timer 0.6, 0, sub {
+    my $timer2; $timer2 = AE::timer 2, 0, sub {
       test {
         ok not kill 0, $child_pid;
         ok kill 0, $grandchild_pid;
@@ -210,14 +212,14 @@ test {
   })->then (sub {
     my $grandchild_pid = $_[0];
     my $child_pid;
-    my $timer; $timer = AE::timer 0.3, 0, sub {
+    my $timer; $timer = AE::timer 1, 0, sub {
       test {
         $child_pid = $cmd->pid;
         kill 2, $child_pid;
         undef $timer;
       } $c;
     };
-    my $timer2; $timer2 = AE::timer 0.6, 0, sub {
+    my $timer2; $timer2 = AE::timer 2, 0, sub {
       test {
         ok not kill 0, $child_pid;
         ok kill 0, $grandchild_pid;
@@ -261,21 +263,22 @@ for my $sig (2, 3, 15) {
       $cv->recv;
     }]);
     $cmd->stdout (\my $grandchild_pid);
-    $cmd->run;
-    my $child_pid;
-    my $timer; $timer = AE::timer 0.6, 0, sub {
-      test {
-        $child_pid = $cmd->pid;
-        kill $sig, $child_pid;
-        undef $timer;
-      } $c;
-    };
-    $cmd->wait->catch (sub { })->then (sub {
-      test {
-        ok not kill 0, $child_pid;
-        ok not kill 0, $grandchild_pid;
-      } $c;
-    }, sub {
+    $cmd->run->then (sub {
+      my $child_pid;
+      my $timer; $timer = AE::timer 1, 0, sub {
+        test {
+          $child_pid = $cmd->pid;
+          kill $sig, $child_pid;
+          undef $timer;
+        } $c;
+      };
+      return $cmd->wait->catch (sub { })->then (sub {
+        test {
+          ok not kill 0, $child_pid;
+          ok not kill 0, $grandchild_pid;
+        } $c;
+      });
+    })->catch (sub {
       my $error = $_[0];
       test {
         ok 0;
@@ -308,7 +311,7 @@ for my $sig ('HUP') {
     $cmd->stdout (\my $grandchild_pid);
     $cmd->run;
     my $child_pid;
-    my $timer; $timer = AE::timer 0.3, 0, sub {
+    my $timer; $timer = AE::timer 1.5, 0, sub {
       test {
         $child_pid = $cmd->pid;
         kill $sig, $child_pid;
@@ -347,7 +350,7 @@ test {
   $cmd->run->then (sub {
     return Promise->new (sub {
       my ($ok, $ng) = @_;
-      my $timer; $timer = AE::timer 0.5, 0, sub {
+      my $timer; $timer = AE::timer 1, 0, sub {
         $ok->();
         undef $timer;
       };
@@ -368,13 +371,21 @@ test {
 test {
   my $c = shift;
   my $cmd = Promised::Command->new (['perl', '-e', q{
+    use AnyEvent;
     use Promised::Command;
     my $cmd = Promised::Command->new (['perl', '-e', q{
-      $SIG{INT} = sub { print "SIGINT\n" };
+      $SIG{INT} = sub { syswrite STDOUT, "SIGINT\n" };
       sleep 10;
     }]);
     $cmd->signal_before_destruction ('INT');
-    $cmd->run;
+    my $cv = AE::cv;
+    $cmd->run->then (sub {
+      my $timer; $timer = AE::timer 1, 0, sub {
+        $cv->send;
+        undef $timer;
+      };
+    });
+    $cv->recv;
   }]);
   $cmd->stdout (\my $stdout);
   $cmd->stderr (\my $stderr);
