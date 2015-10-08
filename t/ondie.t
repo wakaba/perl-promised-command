@@ -70,32 +70,34 @@ test {
   }]);
   $cmd->stdout (\my $stdout);
   $cmd->create_process_group (1);
-  $cmd->run;
-  my $child_pid;
-  my $timer; $timer = AE::timer 1, 0, sub {
-    test {
-      $child_pid = $cmd->pid;
-      kill -2, getpgrp $child_pid;
-      undef $timer;
-    } $c;
-  };
-  $cmd->wait->catch (sub { })->then (sub {
-    return Promise->new (sub {
-      my $ok = $_[0];
-      my $timer; $timer = AE::timer 0.5, 0, sub {
+  $cmd->run->then (sub {
+    my $child_pid;
+    my $timer; $timer = AE::timer 2, 0, sub {
+      test {
+        $child_pid = $cmd->pid;
+        kill -2, getpgrp $child_pid;
+        undef $timer;
+      } $c;
+    };
+    return $cmd->wait->catch (sub { })->then (sub {
+      return Promise->new (sub {
+        my $ok = $_[0];
+        my $timer; $timer = AE::timer 0.5, 0, sub {
+          $ok->();
+          undef $timer;
+        };
+      })->then (sub {
         test {
           my $grandchild_pid = $stdout;
           ok not kill 0, $child_pid;
           ok not kill 0, $grandchild_pid;
-          $ok->();
         } $c;
-        undef $timer;
-      };
+      });
     });
-  }, sub {
+  })->catch (sub {
     my $error = $_[0];
     test {
-      ok 0;
+      ok 0, $error;
     } $c;
   })->then (sub {
     done $c;
@@ -347,7 +349,7 @@ test {
   $cmd->run->then (sub {
     return Promise->new (sub {
       my ($ok, $ng) = @_;
-      my $timer; $timer = AE::timer 0.5, 0, sub {
+      my $timer; $timer = AE::timer 1, 0, sub {
         $ok->();
         undef $timer;
       };
