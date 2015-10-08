@@ -263,21 +263,22 @@ for my $sig (2, 3, 15) {
       $cv->recv;
     }]);
     $cmd->stdout (\my $grandchild_pid);
-    $cmd->run;
-    my $child_pid;
-    my $timer; $timer = AE::timer 1, 0, sub {
-      test {
-        $child_pid = $cmd->pid;
-        kill $sig, $child_pid;
-        undef $timer;
-      } $c;
-    };
-    $cmd->wait->catch (sub { })->then (sub {
-      test {
-        ok not kill 0, $child_pid;
-        ok not kill 0, $grandchild_pid;
-      } $c;
-    }, sub {
+    $cmd->run->then (sub {
+      my $child_pid;
+      my $timer; $timer = AE::timer 1, 0, sub {
+        test {
+          $child_pid = $cmd->pid;
+          kill $sig, $child_pid;
+          undef $timer;
+        } $c;
+      };
+      return $cmd->wait->catch (sub { })->then (sub {
+        test {
+          ok not kill 0, $child_pid;
+          ok not kill 0, $grandchild_pid;
+        } $c;
+      });
+    })->catch (sub {
       my $error = $_[0];
       test {
         ok 0;
