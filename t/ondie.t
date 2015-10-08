@@ -259,10 +259,10 @@ for my $sig (2, 3, 15) {
       $cmd->run
           ->then (sub { syswrite STDOUT, $cmd->pid })
           ->then (sub { $cmd->wait })
-          ->catch (sub { warn "caught: |$_[0]|" })
-          ->then (sub { warn "grandchild done"; $cv->send });
+          ->catch (sub { syswrite STDOUT, "caught: |$_[0]|\n" })
+          ->then (sub { syswrite STDOUT, "grandchild done\n"; $cv->send });
       $cv->recv;
-      warn "child done";
+      syswrite STDOUT, "child done\n";
     }]);
     $cmd->stdout (\my $grandchild_pid);
     $cmd->run->then (sub {
