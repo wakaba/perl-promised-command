@@ -1,9 +1,9 @@
 Scalar::Util~1.42
 Term::ANSIColor~4.04
 AnyEvent~7.11
-File::Spec~3.60
+File::Spec~3.62
 Carp~1.38
 Test::More~1.001014
 Filter::Util::Call~1.55
-Cwd~3.60
+Cwd~3.62
 Path::Tiny~0.076
