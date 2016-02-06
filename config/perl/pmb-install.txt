@@ -1,6 +1,6 @@
 Scalar::Util~1.42
 Term::ANSIColor~4.04
-AnyEvent~7.11
+AnyEvent~7.12
 File::Spec~3.62
 Carp~1.38
 Test::More~1.001014
