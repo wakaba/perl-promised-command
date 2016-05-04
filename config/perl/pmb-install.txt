@@ -5,4 +5,4 @@ Carp~1.38
 Test::More~1.001014
 Filter::Util::Call~1.55
 Cwd~3.62
-Path::Tiny~0.088
+Path::Tiny~0.090
