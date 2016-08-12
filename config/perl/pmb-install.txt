@@ -1,8 +1,8 @@
-Scalar::Util~1.45
-Term::ANSIColor~4.05
 AnyEvent~7.12
 Carp~1.38
-Test::More~1.302045
-Filter::Util::Call~1.55
 Cwd~3.62
+Filter::Util::Call~1.55
 Path::Tiny~0.096
+Scalar::Util~1.45
+Term::ANSIColor~4.05
+Test::More~1.302049
