@@ -1,5 +1,8 @@
 git:
   submodules: false
+os:
+  - linux
+  - osx
 language: perl
 perl:
   - "5.20"
