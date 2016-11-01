@@ -233,9 +233,10 @@ test {
       ok not $result->core_dump;
       is $result->exit_code, -1;
       ok ''.$result;
-      done $c;
-      undef $c;
     } $c;
+  })->then (sub {
+    done $c;
+    undef $c;
   });
 } n => 9, name => 'killed';
 
@@ -261,9 +262,10 @@ test {
       ok not $result->core_dump;
       is $result->exit_code, -1;
       ok ''.$result;
-      done $c;
-      undef $c;
     } $c;
+  })->then (sub {
+    done $c;
+    undef $c;
   });
 } n => 9, name => 'killed';
 
@@ -306,9 +308,10 @@ test {
       isa_ok $result, 'Promised::Command::Result';
       ok $result->is_success;
       is $result->killed, 0;
-      done $c;
-      undef $c;
     } $c;
+  })->then (sub {
+    done $c;
+    undef $c;
   });
 } n => 3, name => 'killed count = 0 (not running)';
 
@@ -367,6 +370,7 @@ test {
     test {
       like $stderr, qr{started.*\nstarted.*\n.*SIGINT received\n(?:SIGQUIT\n.*terminated by SIGINT|.*terminated by SIGINT.*\nSIGQUIT)}s;
     } $c;
+  })->then (sub {
     done $c;
     undef $c;
   });
@@ -376,7 +380,7 @@ run_tests;
 
 =head1 LICENSE
 
-Copyright 2015 Wakaba <wakaba@suikawiki.org>.
+Copyright 2015-2016 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
