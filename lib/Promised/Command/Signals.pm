@@ -24,10 +24,13 @@ sub add_handler ($$$) {
       my $cancel = sub { $canceled = 1 };
       AE::log alert => "SIG$signal received";
       Promise->all ([
-        map { my $code; Promise->new (sub { $_[0]->($_->($cancel)) }) } values %{$Handlers->{$signal} or {}},
-      ])->catch (sub {
-        AE::log alert => "Died within signal handler: $_[0]";
-      })->then (sub {
+        map {
+          my $code = $_;
+          Promise->resolve ($cancel)->then ($code)->catch (sub {
+            AE::log alert => "Died within signal handler: $_[0]";
+          });
+        } values %{$Handlers->{$signal} or {}},
+      ])->then (sub {
         return if $canceled;
         my $action = $Action->{$signal} || 'die';
         unless ($action eq 'ignore') {
