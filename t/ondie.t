@@ -152,15 +152,22 @@ test {
         undef $timer;
       } $c;
     };
+    my $cv = AE::cv;
     my $timer2; $timer2 = AE::timer 2, 0, sub {
       test {
         ok not kill 0, $child_pid;
         ok kill 0, $grandchild_pid;
         kill 2, $grandchild_pid;
         undef $timer2;
+        $cv->send;
       } $c;
     };
     return $cmd->wait->catch (sub { })->then (sub {
+      test {
+        ok !(kill 0, $child_pid), "child = $child_pid dead";
+      } $c;
+      return Promise->from_cv ($cv);
+    })->then (sub {
       test {
         ok !(kill 0, $child_pid), "child = $child_pid dead";
         ok !(kill 0, $grandchild_pid), "grandchild = $grandchild_pid dead";
@@ -175,7 +182,7 @@ test {
     done $c;
     undef $c;
   });
-} n => 4;
+} n => 5;
 
 test {
   my $c = shift;
