@@ -16,7 +16,7 @@ test {
   $cmd->run;
   $cmd->wait->then (sub {
     test {
-      like $stdout, qr{\A(?:/private)/tmp\x0A\z}; # /private/tmp in Mac OS X
+      like $stdout, qr{\A(?:/private|)/tmp\x0A\z}; # /private/tmp in Mac OS X
       is getcwd, $cwd;
       done $c;
       undef $c;
