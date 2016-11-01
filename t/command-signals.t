@@ -289,6 +289,48 @@ test {
     use Promised::Command::Signals;
     my $cv = AE::cv;
     my $code = sub {
+      die "sigterm received!";
+    };
+    my $code2 = sub {
+      Promise->resolve->then (sub {
+        warn "sigterm received then.";
+      });
+    };
+    my $sig = Promised::Command::Signals->add_handler (TERM => $code);
+    my $sig = Promised::Command::Signals->add_handler (TERM => $code2);
+    $cv->recv;
+  }]);
+  $cmd->stderr (\my $stderr);
+  $cmd->run->then (sub {
+    return Promise->new (sub {
+      my $ok = $_[0];
+      my $timer; $timer = AE::timer 0.5, 0, sub {
+        kill 'TERM', $cmd->pid;
+        $ok->();
+        undef $timer;
+      };
+    });
+  })->then (sub {
+    return $cmd->wait;
+  })->then (sub {
+    my $result = $_[0];
+    test {
+      is $result->exit_code, 1;
+      like $stderr, qr{SIGTERM received\n(?:.*sigterm received then.+\n.*Died within signal handler: sigterm received! at .+|.*Died within signal handler: sigterm received! at .+\n.*sigterm received then.+)\n.*terminated by SIGTERM};
+    } $c;
+    done $c;
+    undef $c;
+  });
+} n => 2, name => 'died in handler, and not dead';
+
+test {
+  my $c = shift;
+  my $cmd = Promised::Command->new (['perl', '-e', q{
+    use AnyEvent;
+    use Promise;
+    use Promised::Command::Signals;
+    my $cv = AE::cv;
+    my $code = sub {
       return Promise->reject ("sigterm received!");
     };
     my $sig = Promised::Command::Signals->add_handler (TERM => $code);
