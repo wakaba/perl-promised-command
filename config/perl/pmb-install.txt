@@ -1,4 +1,4 @@
-AnyEvent::Util
+AnyEvent~7.13
 Carp~1.38
 Cwd~3.62
 Filter::Util::Call~1.55
