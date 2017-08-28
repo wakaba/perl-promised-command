@@ -8,6 +8,12 @@ perl:
   - "5.26"
   - "5.14"
   - "5.10"
+matrix:
+  exclude:
+  - perl: "5.14"
+    os: osx
+  - perl: "5.10"
+    os: osx
 before_install: git submodule update --init
 install: "make test-deps"
 script: "make test"
