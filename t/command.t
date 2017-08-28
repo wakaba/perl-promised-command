@@ -213,7 +213,7 @@ test {
 
 test {
   my $c = shift;
-  my $cmd = Promised::Command->new (['perl', '-e', q{sleep 2}]);
+  my $cmd = Promised::Command->new (['perl', '-e', q{sleep 5}]);
   $cmd->run->then (sub {
     return $cmd->send_signal ('INT');
   })->then (sub {
@@ -238,11 +238,11 @@ test {
     done $c;
     undef $c;
   });
-} n => 9, name => 'killed';
+} n => 9, name => 'killed 1';
 
 test {
   my $c = shift;
-  my $cmd = Promised::Command->new (['perl', '-e', q{sleep 2}]);
+  my $cmd = Promised::Command->new (['perl', '-e', q{sleep 5}]);
   $cmd->run->then (sub {
     return $cmd->send_signal (2);
   })->then (sub {
@@ -267,7 +267,7 @@ test {
     done $c;
     undef $c;
   });
-} n => 9, name => 'killed';
+} n => 9, name => 'killed 2';
 
 test {
   my $c = shift;
@@ -380,7 +380,7 @@ run_tests;
 
 =head1 LICENSE
 
-Copyright 2015-2016 Wakaba <wakaba@suikawiki.org>.
+Copyright 2015-2017 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
