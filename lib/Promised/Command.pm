@@ -6,6 +6,8 @@ use Promise;
 use AnyEvent;
 use AnyEvent::Util qw(run_cmd);
 
+push our @CARP_NOT, qw(Streams::Filehandle WritableStream);
+
 my $DEBUG = $ENV{PROMISED_COMMAND_DEBUG};
 my $CommandID = int rand 10000;
 
@@ -53,6 +55,49 @@ sub stderr ($;$) {
   }
   die "Not implemented" if defined wantarray;
 } # stderr
+
+sub get_stdin_stream ($) {
+  die "A stdin handler is already set" if defined $_[0]->{stdin};
+
+  my ($pr, $fh) = AnyEvent::Util::portable_pipe;
+  fcntl $fh, AnyEvent::F_SETFD, AnyEvent::FD_CLOEXEC;
+  AnyEvent::Util::fh_nonblocking $fh, 1;
+
+  require WritableStream;
+  require Streams::Filehandle;
+  my $canceled = 0;
+  my $wcancel = sub { };
+  my $wc;
+  my $ws = WritableStream->new ({
+    start => sub {
+      $wc = $_[1];
+    }, # start
+    write => sub {
+      return Streams::Filehandle::write_to_fh ($fh, $_[1], cancel_ref => \$wcancel)->catch (sub {
+        close $fh;
+        $wcancel->();
+        $canceled = 1;
+        $wcancel = sub { };
+        die $_[0];
+      });
+    }, # write
+    close => sub {
+      close $fh;
+      $canceled = 1;
+      $wcancel = sub { };
+    }, # close
+    abort => sub {
+      close $fh;
+      $wcancel->();
+      $canceled = 1;
+      $wcancel = sub { };
+    }, # abort
+  }); # $ws
+
+  $_[0]->{stdin} = $pr;
+
+  return $ws;
+} # get_stdin_stream
 
 sub get_stdout_stream ($) {
   die "A stdout handler is already set" if defined $_[0]->{stdout};

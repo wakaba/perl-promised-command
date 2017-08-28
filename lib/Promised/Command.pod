@@ -93,13 +93,29 @@ the environment variable, if any, is unset.  Otherwise, any
 environment variable of the main process is left unchanged.  This
 method must be invoked before the C<run> method is invoked.
 
+=item $stream = $cmd->get_stdin_stream
+
 =item $cmd->stdin (SCALARREF)
 
-Specify the standard input as a scalar reference to the byte string.
+Specify how the standard input is handled.
 
-This method must be invoked before the C<run> method is invoked.  If
-this method is not invoked, the standard input is left unchanged
-(i.e. same as the standard input of the main process).
+If the C<get_stdin_stream> is invoked, a L<WritableStream> object that
+is a writable stream of the input is returned.  Any written value
+(i.e. the argument too the C<write> method of the writer) must be an
+L<ArrayBufferView> (such as L<DataView> and
+L<TypedArray::Uint8Array>).  If the stream is aborted, the input is
+closed as soon as possible (which means not all data might be written,
+though it does not affect the execution of the child process).
+
+If a scalar reference is specified to the C<stdin> method, the
+referenced scalar value is written as the input.  The referenced value
+must be a byte string.
+
+Only one of these methods must be invoked at most once.  These methods
+must be invoked before the C<run> method is invoked.
+
+If these methods are not invoked, the input's handling is left
+unchanged (i.e. same as the standard input of the main process).
 
 =item $stream = $cmd->get_stdout_stream
 
@@ -277,9 +293,9 @@ The module requires Perl 5.10 or later.
 The module requires L<Promise>
 <https://github.com/wakaba/perl-promise> and L<AnyEvent::Util>.
 
-Methods C<get_stdout_stream> and C<get_stderr_stream> require the
-L<ReadableStream> module from the perl-streams repository
-<https://github.com/manakai/perl-streams>.
+Methods C<get_stdin_stream>, C<get_stdout_stream>, and
+C<get_stderr_stream> require the L<ReadableStream> module from the
+perl-streams repository <https://github.com/manakai/perl-streams>.
 
 =head1 AUTHOR
 
