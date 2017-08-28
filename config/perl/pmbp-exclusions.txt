@@ -1,0 +1,3 @@
+
+- "../../modules/streams" build tests
+- "../../modules/promise.2" build tests

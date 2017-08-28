@@ -101,24 +101,41 @@ This method must be invoked before the C<run> method is invoked.  If
 this method is not invoked, the standard input is left unchanged
 (i.e. same as the standard input of the main process).
 
+=item $stream = $cmd->get_stdout_stream
+
 =item $cmd->stdout (SCALARREF)
 
 =item $cmd->stdout (CODE)
+
+=item $stream = $cmd->get_stderr_stream
 
 =item $cmd->stderr (SCALARREF)
 
 =item $cmd->stderr (CODE)
 
 Specify how the standard output or the standard error output is
-handled.  If a scalar reference is specified, the output is set to the
-scalar value.  If a code reference is specified, the code is invoked
-with a chunk as the argument whenever the chunk is available, and with
-an C<undef> as the argument when the end of the output is reached.
+handled.
 
-This method must be invoked before the C<run> method is invoked.  If
-this method is not invoked, the standard input is left unchanged
-(i.e. same as the standard output or the standard error output of the
-main process).
+If the C<get_stdout_stream> or C<get_stderr_stream> method is invoked,
+a L<ReadableStream> object that is a readable byte stream of the
+output is returned.  If the stream is canceled, any remaining data are
+silently discarded (which does not affect the child process).
+
+If a scalar reference is specified to the C<stdout> or C<stderr>
+method, the output is set to the referenced scalar value.
+
+If a code reference is specified to the C<stdout> or C<stderr> method,
+the code is invoked with a chunk as the argument whenever the chunk is
+available, and with an C<undef> as the argument when the end of the
+output is reached.
+
+Only one of these methods must be invoked at most once for each of
+standard output and standard error output.  These methods must be
+invoked before the C<run> method is invoked.
+
+If these methods are not invoked, the output's handling is left
+unchanged (i.e. same as the standard output or the standard error
+output of the main process).
 
 =item $pid = $cmd->pid
 
@@ -260,13 +277,17 @@ The module requires Perl 5.10 or later.
 The module requires L<Promise>
 <https://github.com/wakaba/perl-promise> and L<AnyEvent::Util>.
 
+Methods C<get_stdout_stream> and C<get_stderr_stream> require the
+L<ReadableStream> module from the perl-streams repository
+<https://github.com/manakai/perl-streams>.
+
 =head1 AUTHOR
 
 Wakaba <wakaba@suikawiki.org>.
 
 =head1 LICENSE
 
-Copyright 2015 Wakaba <wakaba@suikawiki.org>.
+Copyright 2015-2017 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

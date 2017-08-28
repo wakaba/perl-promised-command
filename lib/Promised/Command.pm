@@ -1,7 +1,7 @@
 package Promised::Command;
 use strict;
 use warnings;
-our $VERSION = '1.0';
+our $VERSION = '2.0';
 use Promise;
 use AnyEvent;
 use AnyEvent::Util qw(run_cmd);
@@ -53,6 +53,68 @@ sub stderr ($;$) {
   }
   die "Not implemented" if defined wantarray;
 } # stderr
+
+sub get_stdout_stream ($) {
+  die "A stdout handler is already set" if defined $_[0]->{stdout};
+  require ArrayBuffer;
+  require DataView;
+  require ReadableStream;
+  my $canceled = 0;
+  my $rc;
+  my $rs = ReadableStream->new ({
+    type => 'bytes',
+    auto_allocate_chunk_size => 1024*2,
+    start => sub {
+      $rc = $_[1];
+    }, # start
+    #pull
+    cancel => sub {
+      $canceled = 1;
+    }, # cancel
+  }); # $rs
+  $_[0]->{stdout} = sub {
+    return if $canceled;
+    if (@_) {
+      $rc->enqueue (DataView->new (ArrayBuffer->new_from_scalarref (\($_[0])))); # will string-copy!
+    } else { # eof
+      my $req = $rc->byob_request;
+      $rc->close;
+      $req->respond (0) if defined $req;
+    }
+  };
+  return $rs;
+} # get_stdout_stream
+
+sub get_stderr_stream ($) {
+  die "A stderr handler is already set" if defined $_[0]->{stderr};
+  require ArrayBuffer;
+  require DataView;
+  require ReadableStream;
+  my $canceled = 0;
+  my $rc;
+  my $rs = ReadableStream->new ({
+    type => 'bytes',
+    auto_allocate_chunk_size => 1024*2,
+    start => sub {
+      $rc = $_[1];
+    }, # start
+    #pull
+    cancel => sub {
+      $canceled = 1;
+    }, # cancel
+  }); # $rs
+  $_[0]->{stderr} = sub {
+    return if $canceled;
+    if (@_) {
+      $rc->enqueue (DataView->new (ArrayBuffer->new_from_scalarref (\($_[0])))); # will string-copy!
+    } else { # eof
+      my $req = $rc->byob_request;
+      $rc->close;
+      $req->respond (0) if defined $req;
+    }
+  };
+  return $rs;
+} # get_stderr_stream
 
 sub propagate_signal ($;$) {
   if (@_ > 1) {
@@ -171,7 +233,7 @@ sub DESTROY ($) {
   my $self = $_[0];
   if ($self->{running}) {
     require Carp;
-    warn "$self is to be destroyed while the command ($self->{command}) is still running", Carp::shortmess;
+    warn "$$: $self is to be destroyed while the command ($self->{command}) is still running", Carp::shortmess;
     if (defined $self->{signal_before_destruction}) {
       kill $self->{signal_before_destruction}, $self->{pid};
     }
@@ -179,7 +241,7 @@ sub DESTROY ($) {
 } # DESTROY
 
 package Promised::Command::Result;
-use overload '""' => 'stringify', fallback => 1;
+use overload '""' => 'stringify', bool => sub { 1 }, fallback => 1;
 
 sub is_success ($) {
   return not $_[0]->{is_error};
@@ -214,7 +276,7 @@ sub stringify ($) {
 
 =head1 LICENSE
 
-Copyright 2015 Wakaba <wakaba@suikawiki.org>.
+Copyright 2015-2017 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

@@ -5,7 +5,7 @@ os:
   - osx
 language: perl
 perl:
-  - "5.20"
+  - "5.26"
   - "5.14"
   - "5.10"
 before_install: git submodule update --init
