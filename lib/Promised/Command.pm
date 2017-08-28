@@ -73,8 +73,9 @@ sub get_stdin_stream ($) {
       $wc = $_[1];
     }, # start
     write => sub {
-      return Streams::Filehandle::write_to_fh ($fh, $_[1], cancel_ref => \$wcancel)->catch (sub {
+      return Streams::Filehandle::write_to_fhref (\$fh, $_[1], cancel_ref => \$wcancel)->catch (sub {
         close $fh;
+        undef $fh;
         $wcancel->();
         $canceled = 1;
         $wcancel = sub { };
@@ -83,11 +84,13 @@ sub get_stdin_stream ($) {
     }, # write
     close => sub {
       close $fh;
+      undef $fh;
       $canceled = 1;
       $wcancel = sub { };
     }, # close
     abort => sub {
       close $fh;
+      undef $fh;
       $wcancel->();
       $canceled = 1;
       $wcancel = sub { };
