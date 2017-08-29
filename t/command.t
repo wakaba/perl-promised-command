@@ -213,7 +213,7 @@ test {
 
 test {
   my $c = shift;
-  my $cmd = Promised::Command->new (['perl', '-e', q{sleep 5}]);
+  my $cmd = Promised::Command->new (['perl', '-e', q{sleep 60}]);
   $cmd->run->then (sub {
     return $cmd->send_signal ('INT');
   })->then (sub {
@@ -242,7 +242,7 @@ test {
 
 test {
   my $c = shift;
-  my $cmd = Promised::Command->new (['perl', '-e', q{sleep 5}]);
+  my $cmd = Promised::Command->new (['perl', '-e', q{sleep 60}]);
   $cmd->run->then (sub {
     return $cmd->send_signal (2);
   })->then (sub {
