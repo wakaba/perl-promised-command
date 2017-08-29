@@ -4,6 +4,7 @@ use Path::Tiny;
 use lib glob path (__FILE__)->parent->parent->child ('t_deps/modules/*/lib');
 use Test::X1;
 use Test::More;
+use Time::HiRes qw(time);
 use Promised::Command;
 use Promise;
 
@@ -232,7 +233,7 @@ test {
   }, sub {
     my $result = $_[0];
     test {
-      isa_ok $result, 'Promised::Command::Result';
+      isa_ok $result, 'Promised::Command::Result', $result;
       ok $result->is_error;
       is $result->signal, 2;
       ok not $result->core_dump;
@@ -248,23 +249,29 @@ test {
 test {
   my $c = shift;
   my $cmd = Promised::Command->new (['sleep', 110]);
+  my $debug = 1;
+  warn time . ": run\n" if $debug;
   $cmd->run->then (sub {
+    warn time . ": send signal\n" if $debug;
     return $cmd->send_signal (2);
   })->then (sub {
     my $result = $_[0];
     test {
-      isa_ok $result, 'Promised::Command::Result';
+      isa_ok $result, 'Promised::Command::Result', $result;
       ok $result->is_success;
       is $result->killed, 1;
     } $c;
+    warn time . ": wait\n" if $debug;
     return $cmd->wait;
   })->then (sub {
     my $result = $_[0];
+    warn time . ": wait fulfilled\n" if $debug;
     test {
       ok 0, $result;
     } $c;
   }, sub {
     my $result = $_[0];
+    warn time . ": wait rejected\n" if $debug;
     test {
       isa_ok $result, 'Promised::Command::Result';
       ok $result->is_error;
