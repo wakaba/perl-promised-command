@@ -213,7 +213,7 @@ test {
 
 test {
   my $c = shift;
-  my $cmd = Promised::Command->new (['perl', '-e', q{sleep 60}]);
+  my $cmd = Promised::Command->new (['perl', '-e', q{sleep 30}]);
   $cmd->run->then (sub {
     return $cmd->send_signal ('INT');
   })->then (sub {
@@ -224,7 +224,12 @@ test {
       is $result->killed, 1;
     } $c;
     return $cmd->wait;
-  })->catch (sub {
+  })->then (sub {
+    my $result = $_[0];
+    test {
+      ok 0, $result;
+    } $c;
+  }, sub {
     my $result = $_[0];
     test {
       isa_ok $result, 'Promised::Command::Result';
@@ -242,7 +247,7 @@ test {
 
 test {
   my $c = shift;
-  my $cmd = Promised::Command->new (['perl', '-e', q{sleep 60}]);
+  my $cmd = Promised::Command->new (['perl', '-e', q{sleep 30}]);
   $cmd->run->then (sub {
     return $cmd->send_signal (2);
   })->then (sub {
@@ -253,7 +258,12 @@ test {
       is $result->killed, 1;
     } $c;
     return $cmd->wait;
-  })->catch (sub {
+  })->then (sub {
+    my $result = $_[0];
+    test {
+      ok 0, $result;
+    } $c;
+  }, sub {
     my $result = $_[0];
     test {
       isa_ok $result, 'Promised::Command::Result';
