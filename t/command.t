@@ -5,8 +5,9 @@ use lib glob path (__FILE__)->parent->parent->child ('t_deps/modules/*/lib');
 use Test::X1;
 use Test::More;
 use Time::HiRes qw(time);
-use Promised::Command;
 use Promise;
+use Promised::Flow;
+use Promised::Command;
 
 test {
   my $c = shift;
@@ -214,8 +215,15 @@ test {
 
 test {
   my $c = shift;
-  my $cmd = Promised::Command->new (['sleep', 110]);
+  my $cmd = Promised::Command->new (['perl', '-e', q{
+    syswrite STDOUT, "ok\x0A";
+    sleep 50;
+    exit 3;
+  }]);
+  $cmd->stdout (\(my $stdout = ''));
   $cmd->run->then (sub {
+    return promised_wait_until { $stdout =~ /^ok/ } interval => 0.01, timeout => 10;
+  })->then (sub {
     return $cmd->send_signal ('INT');
   })->then (sub {
     my $result = $_[0];
@@ -244,14 +252,21 @@ test {
     done $c;
     undef $c;
   });
-} n => 9, name => 'killed 1', timeout => 120;
+} n => 9, name => 'killed 1';
 
 test {
   my $c = shift;
-  my $cmd = Promised::Command->new (['sleep', 110]);
+  my $cmd = Promised::Command->new (['perl', '-e', q{
+    syswrite STDOUT, "ok\x0A";
+    sleep 50;
+    exit 3;
+  }]);
   my $debug = 1;
+  $cmd->stdout (\(my $stdout = ''));
   warn time . ": run\n" if $debug;
   $cmd->run->then (sub {
+    return promised_wait_until { $stdout =~ /^ok/ } interval => 0.01, timeout => 10;
+  })->then (sub {
     warn time . ": send signal\n" if $debug;
     return $cmd->send_signal (2);
   })->then (sub {
@@ -284,7 +299,7 @@ test {
     done $c;
     undef $c;
   });
-} n => 9, name => 'killed 2', timeout => 120;
+} n => 9, name => 'killed 2';
 
 test {
   my $c = shift;
