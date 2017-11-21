@@ -129,16 +129,31 @@ sub start ($) {
   });
 } # start
 
+sub _run ($$) {
+  my ($p, $code) = @_;
+  if (defined $p) {
+    return $p->then ($code);
+  } else {
+    my $return = $code->();
+    return undef unless defined $return;
+    return $return;
+  }
+} # _run
+
 sub stop ($;%) {
   my ($self, %args) = @_;
   my $signal = $args{signal} || 'TERM';
-  return Promise->resolve->then (sub {
-    if (defined $self->{run_cmd}) {
-      $self->{run_cmd}->send_signal ($signal eq 'KILL' ? $signal : 'INT');
-      return $self->{run_cmd}->wait->catch (sub { });
-    }
-  })->then (sub {
-    return unless defined $self->{container_id};
+
+  my $p = _run undef, sub {
+    return undef unless defined $self->{run_cmd};
+
+    $self->{run_cmd}->send_signal ($signal eq 'KILL' ? $signal : 'INT');
+    return $self->{run_cmd}->wait->catch (sub { });
+  };
+
+  $p = _run $p, sub {
+    return Promise->resolve unless defined $self->{container_id};
+    
     my $cmd = Promised::Command->new
         (['docker', ($signal eq 'KILL' ? 'kill' : 'stop'), $self->{container_id}]);
     $cmd->stdout (\my $stdout);
@@ -150,7 +165,7 @@ sub stop ($;%) {
       delete $self->{running};
       return $_[0];
     });
-  });
+  };
 } # stop
 
 sub DESTROY ($) {
