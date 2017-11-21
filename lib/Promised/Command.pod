@@ -286,6 +286,11 @@ Return a short error message for the developer, if available.
 
 =back
 
+=head1 SEE ALSO
+
+There are related modules: L<Promised::Command::Signals>,
+L<Promised::Command::Docker>.
+
 =head1 DEPENDENCY
 
 The module requires Perl 5.10 or later.

@@ -1,0 +1,141 @@
+=head1 NAME
+
+Promised::Command::Docker - Run a command within Docker
+
+=head1 SYNOPSIS
+
+  use Promised::Command::Docker;
+  my $cmd = Promised::Command::Docker->new (
+    image => 'debian:sid',
+    command => ['ls', '-l'],
+  );
+  $cmd->start->then (sub {
+    return $cmd->stop;
+  })->then (sub {
+    warn "done";
+  });
+
+=head1 DESCRIPTION
+
+The C<Promised::Command::Docker> module provides an API to run a
+command using Docker.
+
+=head1 METHODS
+
+=over 4
+
+=item $cmd = Promised::Command::Docker->new ($name => $value, ...)
+
+Create a new command object, which represents a run of the command.
+
+It accepts key/value pairs as arguments, which are interpreted as
+shorthands for invoking parameter methods.
+
+=item $string = $cmd->dockerhost_host_for_container
+
+Return a host name that can be used within the Docker container to
+connect to the host (i.e. the environment where the application is
+running).
+
+=item $promise = $cmd->start
+
+Run the command.  It returns a promise (L<Promise>), which is to be
+fulfilled after the Docker container is ready (i.e. when C<docker run
+-d> exits).
+
+=item $promise = $cmd->stop
+
+Stop the command, using C<docker stop>, if the command is still
+running.
+
+=back
+
+=head2 Paramter methods
+
+The following methods get or set various parameters of the command.
+Their setter can only be invoked before the C<start> method is
+invoked.
+
+=over 4
+
+=item ...->new (docker => $path, ...)
+
+=item ...->new (docker => [$path, @args], ...)
+
+=item $cmd->docker ($path)
+
+=item $cmd->docker ([$path, @args])
+
+=item [$path, @args] = $cmd->docker
+
+Get or set the Docker's command.  If a new value is specified, it must
+be a string or an array reference of strings of the docker command.
+The default is C<docker>.  The getter always returns an array
+reference.
+
+=item ...->new (docker_run_options => [@args], ...)
+
+=item $cmd->docker_run_options ([@args])
+
+=item [@args] = $cmd->docker_run_options
+
+Get or set the Docker's |run| command's arguments.  If a new value is
+specified, it must be an array reference of strings.
+
+=item ...->new (image => $string, ...)
+
+=item $cmd->image ($string)
+
+=item $string = $cmd->image
+
+Get or set the Docker image name.  If a new value is specified, it
+must be a string.  This parameter is required.
+
+=item ...->new (command => [$path, @args], ...)
+
+=item $cmd->command ([$path, @args])
+
+=item [$path, @args] = $cmd->command
+
+Get or set the command to run within the Docker container.  If a new
+value is specified, it must be an array reference of strings.  The
+default is an empty array reference.
+
+=item ...->new (propagate_signal => $boolean, ...)
+
+=item $cmd->propagate_signal ($boolean)
+
+=item $boolean = $cmd->propagate_signal
+
+Get or set whether the C<docker stop> command should be invoked when
+the application process received a C<TERM>, C<INT>, or C<QUIT> signal
+or not.  The default is false.
+
+If signals are to be propagated, any other signal handling should be
+done through L<Promised::Command::Signals> to avoid confliction of
+signal handlers.
+
+=item ...->new (signal_before_destruction => $boolean, ...)
+
+=item $cmd->signal_before_destruction ($boolean)
+
+=item $boolean = $cmd->signal_before_destruction
+
+Get or set whether the C<docker kill> command should be invoked when
+the command object is destroyed without C<stop>ped.  The default is
+false.
+
+This is a safeguard; the application is responsible to exit the
+command appropriately before discarding the reference to the command
+object (unless the intention is running the command forever).
+
+=back
+
+=head1 LICENSE
+
+Copyright 2015-2017 Wakaba <wakaba@suikawiki.org>.
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut
