@@ -69,6 +69,25 @@ sub dockerhost_host_for_container ($) {
   return 'dockerhost';
 } # dockerhost_host_for_container
 
+sub get_dockerhost_ipaddr ($) {
+  my $self = $_[0];
+  return Promise->resolve ($self->{dockerhost_ipaddr})
+      if ref $self and defined $self->{dockerhost_ipaddr};
+  my $ip_cmd = Promised::Command->new ([qw{ip route list dev docker0}]);
+  $ip_cmd->stdout (\my $ip);
+  return $ip_cmd->run->then (sub { return $ip_cmd->wait })->then (sub {
+    die $_[0] unless $_[0]->exit_code == 0;
+    my @ip = split /\s+/, $ip;
+    shift @ip;
+    no warnings; # Odd number of elements
+    my %ip = @ip;
+    $ip = $ip{src};
+    die "Can't get docker0's IP address" unless defined $ip and $ip =~ /\A[0-9.]+\z/;
+    $self->{dockerhost_ipaddr} = $ip if ref $self;
+    return $ip;
+  });
+} # get_dockerhost_ipaddr
+
 sub _r (@) {
   return bless {@_}, 'Promised::Command::Result';
 } # _r
@@ -84,22 +103,11 @@ sub start ($) {
       if defined $self->{self_pid};
   $self->{self_pid} = $$;
 
-  my $ip_cmd = Promised::Command->new ([qw{ip route list dev docker0}]);
-  $ip_cmd->stdout (\my $ip);
-  return $ip_cmd->run->then (sub { return $ip_cmd->wait })->then (sub {
-    die $_[0] unless $_[0]->exit_code == 0;
-    my @ip = split /\s+/, $ip;
-    shift @ip;
-    no warnings; # Odd number of elements
-    my %ip = @ip;
-    $ip = $ip{src};
-    die "Can't get docker0's IP address" unless defined $ip and $ip =~ /\A[0-9.]+\z/;
-    $self->{docker_host_ipaddr} = $ip;
-  })->then (sub {
+  return $self->get_dockerhost_ipaddr->then (sub {
     $self->{run_cmd} = my $cmd = Promised::Command->new ([
       @{$self->docker},
       'run', '-t', '-d',
-      '--add-host=dockerhost:' . $self->{docker_host_ipaddr},
+      '--add-host=dockerhost:' . $self->{dockerhost_ipaddr},
       @{$self->docker_run_options},
       $image,
       @{$self->{command}},

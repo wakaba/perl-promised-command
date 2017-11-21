@@ -37,6 +37,19 @@ Return a host name that can be used within the Docker container to
 connect to the host (i.e. the environment where the application is
 running).
 
+=item $cmd->get_dockerhost_ipaddr->then (sub { $string = shift })
+
+=item Promised::Command::Docker->get_dockerhost_ipaddr->then (sub { $string = shift })
+
+Return a promise (L<Promise>), which is to be fulfilled with the IP
+address for the Docker network interface of the host (i.e. the
+environment where the application is running).  The IP address is
+returned in the textual representation.
+
+The result of this method can be used to listen only the interface of
+the Docker network at the host, or to connect to the host using IP
+address (rather than a domain) from within the Docker container.
+
 =item $promise = $cmd->start
 
 Run the command.  It returns a promise (L<Promise>), which is to be
