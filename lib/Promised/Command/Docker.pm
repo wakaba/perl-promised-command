@@ -2,6 +2,7 @@ package Promised::Command::Docker;
 use strict;
 use warnings;
 our $VERSION = '1.0';
+use Promised::Flow;
 use Promised::Command;
 use Promised::Command::Signals;
 
@@ -12,6 +13,7 @@ sub new ($%) {
   $self->docker_run_options ($opts->{docker_run_options} || []);
   $self->image ($opts->{image}); # or undef
   $self->command ($opts->{command} || []);
+  $self->logs ($opts->{logs}); # or undef
   $self->propagate_signal ($opts->{propagate_signal});
   $self->signal_before_destruction ($opts->{signal_before_destruction});
   return $self;
@@ -50,6 +52,13 @@ sub command ($;$) {
   }
   return $_[0]->{command};
 } # command
+
+sub logs ($;$) {
+  if (@_ > 1) {
+    $_[0]->{logs} = $_[1];
+  }
+  return $_[0]->{logs};
+} # logs
 
 sub propagate_signal ($;$) {
   if (@_ > 1) {
@@ -92,6 +101,17 @@ sub _r (@) {
   return bless {@_}, 'Promised::Command::Result';
 } # _r
 
+sub _run ($$) {
+  my ($p, $code) = @_;
+  if (defined $p) {
+    return $p->then ($code);
+  } else {
+    my $return = $code->();
+    return undef unless defined $return;
+    return $return;
+  }
+} # _run
+
 sub start ($) {
   my $self = $_[0];
 
@@ -132,21 +152,29 @@ sub start ($) {
       die $_[0] unless $_[0]->exit_code == 0;
       chomp $self->{container_id};
       delete $self->{run_cmd};
-      return _r exit_code => 0;
+
+      my $p = _run undef, sub {
+        my $logs = $self->{logs};
+        return undef unless defined $logs;
+        
+        $self->{log_command} = Promised::Command->new ([
+          @{$self->{docker}},
+          'logs',
+          '--follow',
+          $self->{container_id},
+        ]);
+        $self->{log_command}->propagate_signal ($self->{propagate_signal});
+        $self->{log_command}->signal_before_destruction (1);
+        $self->{log_command}->stdout ($logs);
+        return $self->{log_command}->run;
+      };
+
+      return _run $p, sub {
+        return _r exit_code => 0;
+      };
     });
   });
 } # start
-
-sub _run ($$) {
-  my ($p, $code) = @_;
-  if (defined $p) {
-    return $p->then ($code);
-  } else {
-    my $return = $code->();
-    return undef unless defined $return;
-    return $return;
-  }
-} # _run
 
 sub stop ($;%) {
   my ($self, %args) = @_;
@@ -174,6 +202,14 @@ sub stop ($;%) {
       return $_[0];
     });
   };
+
+  return promised_cleanup {
+    my $log_cmd = delete $self->{log_command};
+    return unless defined $log_cmd;
+
+    $log_cmd->send_signal ('TERM');
+    return $log_cmd->wait->catch (sub { });
+  } $p;
 } # stop
 
 sub DESTROY ($) {

@@ -4,7 +4,11 @@ use Promised::Command::Docker;
 
 my $cmd = Promised::Command::Docker->new (
   image => 'debian:sid',
-  command => ['sleep', 100],
+  command => ['perl', '-e', q{
+    print STDOUT "abc\n";
+    print STDERR "xyz\n";
+    sleep 100;
+  }],
   propagate_signal => 1,
 );
 
