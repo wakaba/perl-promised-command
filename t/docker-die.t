@@ -7,6 +7,11 @@ use Test::X1;
 use Promised::Flow;
 use Promised::Command;
 
+if ($ENV{TRAVIS} and $ENV{TRAVIS_OS_NAME} eq 'osx' and not -x "docker") {
+  print "1..1\nok 1 # skip Travis on Mac OS X does not support docker\n";
+  exit 0;
+}
+
 test {
   my $c = shift;
   my $cmd = Promised::Command->new (['perl', '-e', q{
