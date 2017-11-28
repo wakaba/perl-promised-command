@@ -2,6 +2,7 @@ package Promised::Command::Docker;
 use strict;
 use warnings;
 our $VERSION = '1.0';
+use Promise;
 use Promised::Flow;
 use Promised::Command;
 use Promised::Command::Signals;
@@ -97,6 +98,10 @@ sub get_dockerhost_ipaddr ($) {
   });
 } # get_dockerhost_ipaddr
 
+sub get_container_ipaddr ($) {
+  return $_[0]->{get_container_ipaddr};
+} # get_container_ipaddr
+
 sub _r (@) {
   return bless {@_}, 'Promised::Command::Result';
 } # _r
@@ -122,6 +127,10 @@ sub start ($) {
   return Promise->reject (_r is_error => 1, message => "|start| already invoked")
       if defined $self->{self_pid};
   $self->{self_pid} = $$;
+  my ($s_container_ipaddr, $err_container_ipaddr);
+  $self->{get_container_ipaddr} = Promise->new (sub {
+    ($s_container_ipaddr, $err_container_ipaddr) = @_;
+  });
 
   return $self->get_dockerhost_ipaddr->then (sub {
     $self->{run_cmd} = my $cmd = Promised::Command->new ([
@@ -152,6 +161,22 @@ sub start ($) {
       die $_[0] unless $_[0]->exit_code == 0;
       chomp $self->{container_id};
       delete $self->{run_cmd};
+
+      my $cmd = Promised::Command->new ([
+        @{$self->{docker}},
+        'inspect',
+        '--format', '{{ .NetworkSettings.IPAddress }}',
+        $self->{container_id},
+      ]);
+      $cmd->stdout (\my $addr);
+      $cmd->run->then (sub {
+        return $cmd->wait;
+      })->then (sub {
+        chomp $addr;
+        $s_container_ipaddr->($addr);
+      }, sub {
+        $err_container_ipaddr->($_[0]);
+      });
 
       my $p = _run undef, sub {
         my $logs = $self->{logs};

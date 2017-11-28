@@ -50,6 +50,16 @@ The result of this method can be used to listen only the interface of
 the Docker network at the host, or to connect to the host using IP
 address (rather than a domain) from within the Docker container.
 
+=item $cmd->get_container_ipaddr->then (sub { $string = shift })
+
+Return a promise (L<Promise>), which is to be fulfilled with the IP
+address for the Docker network interface of the container (i.e. the
+environment where the command is running).  The IP address is returned
+in the textual representation.
+
+This method is only available after the C<start> method's promise's
+fulfillment.
+
 =item $promise = $cmd->start
 
 Run the command.  It returns a promise (L<Promise>), which is to be
