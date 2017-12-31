@@ -31,6 +31,8 @@ Create a new command object, which represents a run of the command.
 It accepts key/value pairs as arguments, which are interpreted as
 shorthands for invoking parameter methods.
 
+=item $string = Promised::Command::Docker->dockerhost_host_for_container
+
 =item $string = $cmd->dockerhost_host_for_container
 
 Return a host name that can be used within the Docker container to
@@ -42,7 +44,7 @@ running).
 =item Promised::Command::Docker->get_dockerhost_ipaddr->then (sub { $string = shift })
 
 Return a promise (L<Promise>), which is to be fulfilled with the IP
-address for the Docker network interface of the host (i.e. the
+address for the Docker network interface of the container (i.e. the
 environment where the application is running).  The IP address is
 returned in the textual representation.
 
@@ -50,15 +52,10 @@ The result of this method can be used to listen only the interface of
 the Docker network at the host, or to connect to the host using IP
 address (rather than a domain) from within the Docker container.
 
-=item $cmd->get_container_ipaddr->then (sub { $string = shift })
-
-Return a promise (L<Promise>), which is to be fulfilled with the IP
-address for the Docker network interface of the container (i.e. the
-environment where the command is running).  The IP address is returned
-in the textual representation.
-
-This method is only available after the C<start> method's promise's
-fulfillment.
+The promise is rejected if the IP address cannot be obtained.  On the
+Mac OS X the promise is always rejected (The
+C<dockerhost_host_for_container> method should be used instead to
+refer to the host).
 
 =item $promise = $cmd->start
 
