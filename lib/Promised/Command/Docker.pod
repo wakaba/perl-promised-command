@@ -42,7 +42,7 @@ running).
 =item Promised::Command::Docker->get_dockerhost_ipaddr->then (sub { $string = shift })
 
 Return a promise (L<Promise>), which is to be fulfilled with the IP
-address for the Docker network interface of the host (i.e. the
+address for the Docker network interface of the container (i.e. the
 environment where the application is running).  The IP address is
 returned in the textual representation.
 
