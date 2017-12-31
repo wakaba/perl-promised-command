@@ -31,6 +31,8 @@ Create a new command object, which represents a run of the command.
 It accepts key/value pairs as arguments, which are interpreted as
 shorthands for invoking parameter methods.
 
+=item $string = Promised::Command::Docker->dockerhost_host_for_container
+
 =item $string = $cmd->dockerhost_host_for_container
 
 Return a host name that can be used within the Docker container to

@@ -25,6 +25,7 @@ test {
     my $r = $_[0];
     test {
       like $r, qr{\A[0-9]+(?:\.[0-9]+){3}\z};
+      ok $cmd->dockerhost_host_for_container;
     } $c;
     return $cmd->get_dockerhost_ipaddr->then (sub {
       my $r2 = $_[0];
@@ -36,7 +37,7 @@ test {
     done $c;
     undef $c;
   });
-} n => 2, name => 'get_dockerhost_ipaddr (object method)';
+} n => 3, name => 'get_dockerhost_ipaddr (object method)';
 
 test {
   my $c = shift;
@@ -50,6 +51,15 @@ test {
     undef $c;
   });
 } n => 1, name => 'get_dockerhost_ipaddr (class method)';
+
+test {
+  my $c = shift;
+  my $r = Promised::Command::Docker->dockerhost_host_for_container;
+  test {
+    ok $r;
+  } $c;
+  done $c;
+} n => 1, name => 'dockerhost_host_for_container (class method)';
 
 run_tests;
 
