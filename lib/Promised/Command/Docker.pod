@@ -50,6 +50,11 @@ The result of this method can be used to listen only the interface of
 the Docker network at the host, or to connect to the host using IP
 address (rather than a domain) from within the Docker container.
 
+The promise is rejected if the IP address cannot be obtained.  On the
+Mac OS X the promise is always rejected (The
+C<dockerhost_host_for_container> method should be used instead to
+refer to the host).
+
 =item $promise = $cmd->start
 
 Run the command.  It returns a promise (L<Promise>), which is to be

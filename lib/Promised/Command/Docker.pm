@@ -6,6 +6,8 @@ use Promised::Flow;
 use Promised::Command;
 use Promised::Command::Signals;
 
+my $PlatformIsMacOSX = $^O eq 'darwin';
+
 sub new ($%) {
   my $self = bless {}, shift;
   my $opts = {@_};
@@ -75,13 +77,15 @@ sub signal_before_destruction ($;$) {
 } # signal_before_destruction
 
 sub dockerhost_host_for_container ($) {
-  return 'dockerhost';
+  return $PlatformIsMacOSX ? 'docker.for.mac.localhost' : 'dockerhost';
 } # dockerhost_host_for_container
 
 sub get_dockerhost_ipaddr ($) {
   my $self = $_[0];
   return Promise->resolve ($self->{dockerhost_ipaddr})
       if ref $self and defined $self->{dockerhost_ipaddr};
+  return Promise->reject ("Can't get dockerhost IP address on Mac OS X")
+      if $PlatformIsMacOSX;
   my $ip_cmd = Promised::Command->new ([qw{ip route list dev docker0}]);
   $ip_cmd->stdout (\my $ip);
   return $ip_cmd->run->then (sub { return $ip_cmd->wait })->then (sub {
@@ -123,11 +127,13 @@ sub start ($) {
       if defined $self->{self_pid};
   $self->{self_pid} = $$;
 
-  return $self->get_dockerhost_ipaddr->then (sub {
+  return Promise->all ([
+    $PlatformIsMacOSX ? undef : $self->get_dockerhost_ipaddr,
+  ])->then (sub {
     $self->{run_cmd} = my $cmd = Promised::Command->new ([
       @{$self->docker},
       'run', '-t', '-d',
-      '--add-host=dockerhost:' . $self->{dockerhost_ipaddr},
+      (defined $self->{dockerhost_ipaddr} ? ('--add-host=dockerhost:' . $self->{dockerhost_ipaddr}) : ()),
       @{$self->docker_run_options},
       $image,
       @{$self->{command}},
