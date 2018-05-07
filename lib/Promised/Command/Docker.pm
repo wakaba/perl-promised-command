@@ -220,17 +220,21 @@ sub stop ($;%) {
 
   $p = _run $p, sub {
     return Promise->resolve unless defined $self->{container_id};
-    
+
+    my $kc = $signal eq 'KILL' ? 'kill' : 'stop';
     my $cmd = Promised::Command->new
-        (['docker', ($signal eq 'KILL' ? 'kill' : 'stop'), $self->{container_id}]);
+        (['docker', $kc, $self->{container_id}]);
     $cmd->stdout (\my $stdout);
-    return $cmd->run->then (sub {
+    return $self->{stop_command}->{$kc} ||= $cmd->run->then (sub {
       return $cmd->wait;
     })->then (sub {
       die $_[0] unless $_[0]->exit_code == 0;
       delete $self->{signal_handlers};
       delete $self->{running};
       return $_[0];
+    })->finally (sub {
+      delete $self->{stop_command}->{$kc};
+      return undef;
     });
   };
 
