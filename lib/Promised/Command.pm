@@ -104,6 +104,7 @@ sub get_stdin_stream ($) {
 
 sub get_stdout_stream ($) {
   die "A stdout handler is already set" if defined $_[0]->{stdout};
+  require Streams::_Common;
   require ArrayBuffer;
   require DataView;
   require ReadableStream;
@@ -111,7 +112,7 @@ sub get_stdout_stream ($) {
   my $rc;
   my $rs = ReadableStream->new ({
     type => 'bytes',
-    auto_allocate_chunk_size => 1024*2,
+    auto_allocate_chunk_size => $Streams::_Common::DefaultBufferSize,
     start => sub {
       $rc = $_[1];
     }, # start
@@ -135,6 +136,7 @@ sub get_stdout_stream ($) {
 
 sub get_stderr_stream ($) {
   die "A stderr handler is already set" if defined $_[0]->{stderr};
+  require Streams::_Common;
   require ArrayBuffer;
   require DataView;
   require ReadableStream;
@@ -142,7 +144,7 @@ sub get_stderr_stream ($) {
   my $rc;
   my $rs = ReadableStream->new ({
     type => 'bytes',
-    auto_allocate_chunk_size => 1024*2,
+    auto_allocate_chunk_size => $Streams::_Common::DefaultBufferSize,
     start => sub {
       $rc = $_[1];
     }, # start
