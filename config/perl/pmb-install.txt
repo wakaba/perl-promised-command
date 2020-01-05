@@ -5,5 +5,5 @@ Filter::Util::Call~1.59
 Path::Tiny~0.108
 Scalar::Util~1.53
 Socket~2.029
-Term::ANSIColor~4.06
-Test::Builder~1.302170
+Term::ANSIColor~5.00
+Test::More~1.302170
