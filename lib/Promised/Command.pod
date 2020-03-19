@@ -242,6 +242,18 @@ It is set to C<TERM> unless explicitly specified.
 
 This method must be invoked before the C<run> method is invoked.
 
+=item $cmd->abort_signal ($asignal)
+
+Set the abort signal (L<AbortSignal> object from the
+L<https://github.com/wakaba/perl-promise> respository; the value
+returned by the C<< $abort_controller->signal >> method) which can be
+used to send a signal to terminate the process.
+
+The signal sent when aborted is specified by the C<timeout_signal>
+method.
+
+This method must be invoked before the C<run> method is invoked.
+
 =back
 
 =head1 RESULT OBJECT
@@ -308,7 +320,7 @@ Wakaba <wakaba@suikawiki.org>.
 
 =head1 LICENSE
 
-Copyright 2015-2017 Wakaba <wakaba@suikawiki.org>.
+Copyright 2015-2020 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

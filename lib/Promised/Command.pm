@@ -194,6 +194,13 @@ sub timeout_signal ($;$) {
   return $_[0]->{timeout_signal} || 'TERM';
 } # timeout_signal
 
+sub abort_signal ($;$) {
+  if (@_ > 1) {
+    $_[0]->{abort_signal} = $_[1];
+  }
+  return $_[0]->{abort_signal};
+} # abort_signal
+
 sub _r (@) {
   return bless {@_}, __PACKAGE__.'::Result';
 } # _r
@@ -236,6 +243,12 @@ sub run ($) {
       $self->send_signal ($self->timeout_signal);
       delete $self->{timer};
     } if $self->{timeout};
+    if (defined $self->{abort_signal}) {
+      $self->{abort_signal}->manakai_onabort (sub {
+        $self->send_signal ($self->timeout_signal);
+        delete $self->{timer};
+      });
+    }
     my $command = [$self->{command}, @{$self->{args}}];
     my $command_id = $CommandID++;
     warn "Command[$command_id]: Start |@$command|\n" if $DEBUG;
@@ -244,6 +257,10 @@ sub run ($) {
       delete $self->{running};
       delete $self->{signal_handlers};
       delete $self->{timer};
+      if (defined $self->{abort_signal}) {
+        $self->{abort_signal}->manakai_onabort (undef);
+        delete $self->{abort_signal};
+      }
       warn "Command[$command_id]: Done @{[$result >> 8]}\n" if $DEBUG;
       if ($result & 0x7F) {
         $ng->(_r is_error => 1, core_dump => !!($result & 0x80), signal => $result & 0x7F);
@@ -326,7 +343,7 @@ sub stringify ($) {
 
 =head1 LICENSE
 
-Copyright 2015-2017 Wakaba <wakaba@suikawiki.org>.
+Copyright 2015-2020 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
