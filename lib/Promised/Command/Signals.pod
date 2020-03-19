@@ -51,14 +51,24 @@ When all references to the object returned by the C<add_handler>
 method is discarded, the code is removed from the registry so that it
 is no longer invoked by the signal.
 
+=item $asignal = Promised::Command::Signals->abort_signal
+
+Return an abort signal (L<AbortSignal> object from the
+L<https://github.com/wakaba/perl-promise> respository; the value
+returned by the C<< $abort_controller->signal >> method) which is
+aborted when one of signals C<INT>, C<TERM>, and C<QUIT> is received.
+
+This method returns different objects whenever the method is invoked.
+
 =back
 
 =head1 DEPENDENCY
 
 The module requires Perl 5.10 or later.
 
-The module requires L<Promise>
-<https://github.com/wakaba/perl-promise> and L<AnyEvent::Util>.
+The module requires L<Promise> and L<AbortController> modules in the
+<https://github.com/wakaba/perl-promise> repository and
+L<AnyEvent::Util> in the L<AnyEvent> package.
 
 =head1 AUTHOR
 
@@ -66,7 +76,7 @@ Wakaba <wakaba@suikawiki.org>.
 
 =head1 LICENSE
 
-Copyright 2015 Wakaba <wakaba@suikawiki.org>.
+Copyright 2015-2020 Wakaba <wakaba@suikawiki.org>.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.

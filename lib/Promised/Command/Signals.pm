@@ -50,6 +50,20 @@ sub _remove_handler ($$$) {
   delete $Sig->{$signal} unless keys %{$Handlers->{$signal}};
 } # _remove_handler
 
+my $GlobalAbortControllers = [];
+
+sub abort_signal ($) {
+  my $class = shift;
+  require AbortController;
+  my $ac = AbortController->new;
+  my $v = {ac => $ac, sigs => {}};
+  push @$GlobalAbortControllers, $v;
+  $v->{sigs}->{$_} = $class->add_handler ($_ => sub {
+    $ac->abort;
+  }) for qw(INT QUIT TERM);
+  return $ac->signal;
+} # abort_signal
+
 package Promised::Command::Signals::Handler;
 
 sub DESTROY ($) {
@@ -57,3 +71,12 @@ sub DESTROY ($) {
 } # DESTROY
 
 1;
+
+=head1 LICENSE
+
+Copyright 2015-2020 Wakaba <wakaba@suikawiki.org>.
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut

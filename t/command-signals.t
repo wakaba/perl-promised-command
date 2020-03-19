@@ -407,4 +407,48 @@ test {
   });
 } n => 2, name => 'has handler, canceled';
 
+test {
+  my $c = shift;
+  my $cmd = Promised::Command->new (['perl', '-e', q{
+    use AnyEvent;
+    use Promised::Command::Signals;
+    my $cv = AE::cv;
+    my $code = sub {
+      warn "sigterm received!\n";
+    };
+    Promised::Command::Signals->abort_signal->manakai_onabort ($code);
+    $cv->recv;
+  }]);
+  $cmd->stderr (\my $stderr);
+  $cmd->run->then (sub {
+    return Promise->new (sub {
+      my $ok = $_[0];
+      my $timer; $timer = AE::timer 0.5, 0, sub {
+        kill 'TERM', $cmd->pid;
+        $ok->();
+        undef $timer;
+      };
+    });
+  })->then (sub {
+    return $cmd->wait;
+  })->then (sub {
+    my $result = $_[0];
+    test {
+      is $result->exit_code, 1;
+      like $stderr, qr{SIGTERM received\nsigterm received!\n.*terminated by SIGTERM};
+    } $c;
+    done $c;
+    undef $c;
+  });
+} n => 2, name => 'ac: has handler';
+
 run_tests;
+
+=head1 LICENSE
+
+Copyright 2015-2020 Wakaba <wakaba@suikawiki.org>.
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut
