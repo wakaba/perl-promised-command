@@ -415,9 +415,15 @@ test {
     my $cv = AE::cv;
     my $code = sub {
       warn "sigterm received!\n";
+      my $t; $t = AE::timer 3, 0, sub {
+        $cv->send;
+        undef $t;
+      };
     };
     Promised::Command::Signals->abort_signal->manakai_onabort ($code);
     $cv->recv;
+    warn "ended\n";
+    exit 3;
   }]);
   $cmd->stderr (\my $stderr);
   $cmd->run->then (sub {
@@ -434,8 +440,8 @@ test {
   })->then (sub {
     my $result = $_[0];
     test {
-      is $result->exit_code, 1;
-      like $stderr, qr{SIGTERM received\nsigterm received!\n.*terminated by SIGTERM};
+      is $result->exit_code, 3;
+      like $stderr, qr{SIGTERM received\nsigterm received!\nended\n$};
     } $c;
     done $c;
     undef $c;

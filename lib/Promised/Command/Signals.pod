@@ -57,6 +57,7 @@ Return an abort signal (L<AbortSignal> object from the
 L<https://github.com/wakaba/perl-promise> respository; the value
 returned by the C<< $abort_controller->signal >> method) which is
 aborted when one of signals C<INT>, C<TERM>, and C<QUIT> is received.
+The signal is canceled.
 
 This method returns different objects whenever the method is invoked.
 

@@ -59,7 +59,11 @@ sub abort_signal ($) {
   my $v = {ac => $ac, sigs => {}};
   push @$GlobalAbortControllers, $v;
   $v->{sigs}->{$_} = $class->add_handler ($_ => sub {
+    $_[0]->(); # cancel signal
     $ac->abort;
+    $GlobalAbortControllers = [grep {
+      $_->{ac} ne $ac;
+    } @$GlobalAbortControllers];
   }) for qw(INT QUIT TERM);
   return $ac->signal;
 } # abort_signal
