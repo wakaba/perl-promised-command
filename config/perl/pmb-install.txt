@@ -4,6 +4,6 @@ Cwd~3.75
 Filter::Util::Call~1.59
 Path::Tiny~0.114
 Scalar::Util~1.55
-Socket~2.029
+Socket~2.030
 Term::ANSIColor~5.01
 Test::More~1.302175
